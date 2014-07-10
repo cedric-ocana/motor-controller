@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1= title
+  form(action="/save", method="post")
+   p
+    label Enter a new DAC value 
+    input(type='number', placeholder='new vlaue', name='dac-value', autofocus='autofocus')
+   p 
+    input(type='submit', value='Save')
