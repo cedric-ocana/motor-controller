@@ -1,11 +1,28 @@
 var express = require('express');
 var router = express.Router();
 var os = require('os');
+
+function assessDacRange(value)
+{
+	if(value > 4095)
+		{
+		value = 4095;
+	}
+	if(value < 0)
+	{
+		value = 0;
+	}
+	return value;
+}
+
 var internalSetDac = function(value, dac, callback){
 						console.log("DAC:\t" + value);
-						};
+					 };
+					 
+// Check operating system and load SPI interface if linux is detected.
 if (os.platform() == 'linux')
 {
+	// HW - interaction initial definition
 	var SPI = require('spi');
 	var spi = new SPI.Spi('/dev/spidev0.0', {
 		'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
@@ -13,15 +30,6 @@ if (os.platform() == 'linux')
 	  }, function(s){s.open();});
 
 	internalSetDac = function(value, dac, callback){
-		if(value > 4095)
-			{
-			value = 4095;
-		}
-		if(value < 0)
-		{
-			value = 0;
-		}
-		
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);
 			txbuf.writeUInt16BE(value,0);
@@ -36,13 +44,6 @@ if (os.platform() == 'linux')
 	}
 }
 
-// HW - interaction initial definition
-
-
-
-
-
-
 router.post('/save', function(req,res){
  var dac = {value:0, max:4096, min:0}
  var settings = {};
@@ -53,7 +54,7 @@ router.post('/save', function(req,res){
   settings.dacValue = 0;
   console.log("Given value vas Not a number!");
  }
- internalSetDac(settings.dacValue,dac,function(dac){console.log("DAC:\t" + dac);});
+ internalSetDac(assessDacRange(settings.dacValue),dac,function(dac){console.log("DAC:\t" + dac);});
  res.redirect('back');
 });
 
