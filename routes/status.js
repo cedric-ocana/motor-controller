@@ -13,10 +13,10 @@ function calcAdc(adcValue)
 }
 
 var internalGetAdc = function(){
-						return 3.3;
+						return calcAdc(0xFF);
 					 };
 					 
-// Check operating system and load SPI interface if linux is detected.
+// Check operating system and load i2c.
 if (os.platform() == 'linux')
 {
 	var i2c = require('i2c');

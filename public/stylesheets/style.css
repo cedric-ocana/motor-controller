@@ -6,3 +6,62 @@ body {
 a {
   color: #00B7FF;
 }
+
+input {
+  padding: 0 0px 0 0px;
+  margin-left: 2px;
+  
+}
+label { display: inline; width: 250px; }
+
+div.status{
+	width:12px;
+	padding:1px;
+	background-color:gray;
+	border:1px solid black;
+	height:12px;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+div.statusok{
+	width:12px;
+	padding:1px;
+	background-color:green;
+	border:1px solid black;
+	height:12px;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+div.statuserr{
+	width:12px;
+	padding:1px;
+	background-color:red;
+	border:1px solid black;
+	height:12px;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+#progressbar
+{
+	width:100px;
+	padding:1px;
+	background-color:white;
+	border:1px solid black;
+	height:12px;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;	
+}
+#indicator
+{
+	width:50px;
+	background-color:blue;
+	height:12px;
+	margin:0;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}

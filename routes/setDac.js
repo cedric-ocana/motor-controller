@@ -4,18 +4,19 @@ var os = require('os');
 
 function assessDacRange(value)
 {
-	if(value > 4095)
+	var dac = {value:0, max:4096, min:0}
+	if(value > dac.max)
 		{
-		value = 4095;
+		value = dac.max;
 	}
-	if(value < 0)
+	if(value < dac.min)
 	{
-		value = 0;
+		value = dac.min;
 	}
 	return value;
 }
 
-var internalSetDac = function(value, dac, callback){
+var internalSetDac = function(value, callback){
 						console.log("DAC:\t" + value);
 					 };
 					 
@@ -29,7 +30,7 @@ if (os.platform() == 'linux')
 		'chipSelect': SPI.CS['low'] // 'none', 'high' - defaults to low
 	  }, function(s){s.open();});
 
-	internalSetDac = function(value, dac, callback){
+	internalSetDac = function(value, callback){
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);
 			txbuf.writeUInt16BE(value,0);
@@ -40,22 +41,87 @@ if (os.platform() == 'linux')
 			//Default:  [0                 ][0        ][1                  ][ 1                  ]> value
 			//Default is 0x3x xx
 			txbuf.writeUInt8(txbuf.readUInt8(0) | 0x30,0);
-			spi.transfer(txbuf, rxbuf, callback(value));
+			spi.transfer(txbuf, rxbuf, callback("DAC" ,value));
+	}
+}
+
+function setDac(request, callback)
+{	
+	var settings = {};	
+	settings.dacValue = parseInt( request.value);	
+	if (isNaN(settings.dacValue))
+	{				
+		console.log("Given value vas Not a number!");
+	}
+	else
+	{
+		internalSetDac(assessDacRange(settings.dacValue),callback);
+	}
+}
+
+
+
+function calcAdc(adcValue)
+{
+	var minValue = 0.0303;
+	var vdd = 3.371;
+	var pga = 1;
+	var maxAdcValue = 0x8000;
+	var outputValue = adcValue/(maxAdcValue * pga) * vdd + minValue;
+	outputValue = Math.round(outputValue * 1000)/1000;
+	return outputValue;
+}
+
+var internalGetAdc = function(){
+						return calcAdc(0x8000);
+					 };
+					 
+// Check operating system and load i2c.
+if (os.platform() == 'linux')
+{
+	var i2c = require('i2c');
+	var address = 0x48;
+	var wire = new i2c(address , { device: "/dev/i2c-1"});
+	internalGetAdc = function(){
+						wire.writeByte(0x0C, function(err){});
+						res = wire.readBytes(0x0C,3,function(err,res){});
+						return calcAdc(res.readUInt16BE(0));
+					 }
+}
+
+
+function cmdDispatcher(req, callback)
+{
+	var request = eval(req.body);
+	var response = {};	
+	response.parameter = request.parameter;
+	response.status = "OK";
+	
+	
+	switch (request.parameter)
+	{
+		case "dac-value":
+		{		
+			setDac(request , callback);
+			return response;
+		}
+		case "adc-value":
+		{									
+			response.value = internalGetAdc();			
+			return response;
+		}		
+		default:
+		{		
+			response.status = "UNKNOWN";
+			return response;
+		}
 	}
 }
 
 router.post('/save', function(req,res){
- var dac = {value:0, max:4096, min:0}
- var settings = {};
-
- settings.dacValue = parseInt( req.body['dac-value']);
- if (isNaN(settings.dacValue))
- {
-  settings.dacValue = 0;
-  console.log("Given value vas Not a number!");
- }
- internalSetDac(assessDacRange(settings.dacValue),dac,function(dac){console.log("DAC:\t" + dac);});
- res.redirect('back');
+	var response = cmdDispatcher(req ,function(parameter, value){console.log(parameter + ":\t" + value);});
+	res.writeHead(200);
+	res.end(JSON.stringify(response));
 });
 
 module.exports = router;

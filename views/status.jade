@@ -1,10 +1,22 @@
 extends layout
 
 block content
-  h1= title
-  form(action="/save", method="post")
-   p
-    label Enter a new DAC value 
-    input(type='number', placeholder='new vlaue', name='dac-value', autofocus='autofocus')
-   p 
-    input(type='submit', value='Save')
+	script(src='/javascripts/jquery-2.1.1.js')
+	script(src='/javascripts/motor-low-level.js')
+	h1= title
+	div(id='dac-value-status', class='status')
+	label
+		|Enter a new DAC value
+	input(type='text', placeholder='0', id='dac-value', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)set(this.id)}" )		
+
+	div(id='adc-value-status', class='status')
+	label
+		|ADC value 
+		input(type='text', id='adc-value', placeholder='0')
+		
+	div(id='progressbar')
+		div(id='indicator')
+
+	label
+		|Request result:
+	p(id='ajax-msg')
