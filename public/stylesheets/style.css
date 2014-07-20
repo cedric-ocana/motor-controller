@@ -46,8 +46,13 @@ div.statuserr{
 }
 
 
-input.manualcontroller{
-	width:200px;
+#manualController
+{
+	width:155px;
+}
+
+#manualControllerPad{
+	width:128px;
 	padding:1px;
 	background-color:white;
 	border:1px solid black;
@@ -55,12 +60,46 @@ input.manualcontroller{
 	-webkit-border-radius: 15px;
 	-moz-border-radius: 15px;
 	border-radius: 15px;
-	background-image:url('pictures/speed.gif');
-
+	background-image:url('pictures/speed.png');
+	float:left;
 }
 
+#speedbar
+{
+	width:14px;
+	padding:1px;
+	background-color:gray;
+	border:1px solid black;
+	height:200px;
+	-webkit-border-radius: 15px;
+	-moz-border-radius: 15px;
+	border-radius: 15px;
+	float:right;
+}
+#speedindicator
+{
+	width:12px;
+	padding:0px;
+	background-color:orange;
+	margin:0px;
+	margin-top:90px;
+	border:1px solid black;
+	height:17px;
+	-webkit-border-radius: 8px;
+	-moz-border-radius: 8px;
+	border-radius: 8px;
+	float:center;
+}
 
-
+#speed
+{
+	width:155px;
+	margin-top: 2px;
+	-webkit-border-radius: 8px;
+	-moz-border-radius: 8px;
+	border-radius: 8px;
+	text-align:center;
+}
 
 #progressbar
 {
