@@ -25,6 +25,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
+app.post('/control',setDac);
 app.use('/users', users);
 app.use('/status',status);
 app.post('/save',setDac);
