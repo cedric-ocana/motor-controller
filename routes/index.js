@@ -2,7 +2,7 @@ var express = require('express');
 //var functions = require('functions');
 var router = express.Router();
 
-
+ 
 // var redis = require('redis');
 // var client = redis.createClient();
 

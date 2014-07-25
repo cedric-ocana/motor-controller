@@ -11,7 +11,7 @@ function calcAdc(adcValue)
 	var outputValue = adcValue/(maxAdcValue * pga) * vdd + minValue;
 	outputValue = Math.round(outputValue * 1000)/1000;
 }
-
+ 
 var internalGetAdc = function(){
 						return calcAdc(0xFF);
 					 };
@@ -19,14 +19,14 @@ var internalGetAdc = function(){
 // Check operating system and load i2c.
 if (os.platform() == 'linux')
 {
-	var i2c = require('i2c');
+/*	var i2c = require('i2c');
 	var address = 0x48;
 	var wire = new i2c(address , { device: "/dev/i2c-1"});
 	internalGetAdc = function(){
 						wire.writeByte(0x0C, function(err){});
 						res = wire.readBytes(0x0C,3,function(err,res){});
 						return calcAdc(res.readUInt16BE(0));
-					 }
+					 }*/
 }
 
 

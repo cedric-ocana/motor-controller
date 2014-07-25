@@ -1,7 +1,9 @@
 var express = require('express');
 var router = express.Router();
 var os = require('os');
+//var tools = require('tools');
 
+ 
 function assessDacRange(value)
 {
 	var dac = {value:0, max:4096, min:0}

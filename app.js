@@ -8,7 +8,7 @@ var bodyParser = require('body-parser');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 var status = require('./routes/status');
-var setDac = require('./routes/setDac');
+//var setDac = require('./routes/setDac');
 var app = express();
 
 
@@ -25,10 +25,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
-app.post('/control',setDac);
+//app.post('/control',setDac);
 app.use('/users', users);
 app.use('/status',status);
-app.post('/save',setDac);
+//app.post('/save',setDac);
 
 
 /// catch 404 and forward to error handler
