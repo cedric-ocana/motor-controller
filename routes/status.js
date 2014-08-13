@@ -15,7 +15,7 @@ function calcAdc(adcValue)
 var internalGetAdc = function(){
 						return calcAdc(0xFF);
 					 };
-					 
+	 				 
 // Check operating system and load i2c.
 if (os.platform() == 'linux')
 {
