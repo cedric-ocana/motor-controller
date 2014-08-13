@@ -13,6 +13,7 @@ var configuration = {"mode":"emulator","dac":{"value":0.0}};
 
 
 var dac = require('./dac.js');
+var gpio = require('./gpio.js');
 
 function emulatorActive(){
     return configuration.mode === "emulator";    
@@ -79,9 +80,19 @@ function getAdcEml()
 
 exports.getDacValue = function getDacValue(){
     return configuration.dac.value;
-}
+};
 
 exports.setDacValue = function setDacValue(newDacValue){    
     configuration.dac.value = dac.setValue(newDacValue, emulatorActive);
+};
+
+
+exports.setLimitoverride = function setLimitoverride()
+{
+    gpio.SetLimitoverride();
 }
 
+exports.clrLimitoverride = function clrLimitoverride()
+{
+    gpio.clrLimitoverride();
+}

@@ -119,7 +119,21 @@ router.route('/mode')
         }
         response.mode = hardware.getMode();                
         res.json(response);
-    });   
+    });  
+    
+    
+router.route('/gpio/limitoverride')              
+    .delete(function(req, res){
+        var response = getResponseMessageOK("limitoverride");       	
+        hardware.clrLimitoverride();
+        res.json(response);
+    })
+    
+    .put(function(req, res){          
+        var response = getResponseMessageOK("limitoverride");       	
+        hardware.setLimitoverride();
+        res.json(response);
+    });    
 
 module.exports = router;
 
