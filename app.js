@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 var status = require('./routes/status');
+var api = require('./routes/api');
 //var setDac = require('./routes/setDac');
 var app = express();
 
@@ -28,6 +29,7 @@ app.use('/', routes);
 //app.post('/control',setDac);
 app.use('/users', users);
 app.use('/status',status);
+app.use('/api', api);
 //app.post('/save',setDac);
 
 
