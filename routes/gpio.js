@@ -5,42 +5,62 @@
  */
 var os = require('os');
 
+var configuration = {"limitoverride":{"pin":11,"setvalue":1,"clrvalue":0},
+                     "limitswitch":{"pin":12,"setvalue":1,"clrvalue":0}};
+    
 var internalSetLimitoverride = function(callback){
-                                    console.log("LIMITOVERRIDE:\tSET");
-                                };
+        console.log("LIMITOVERRIDE:\tSET");
+        callback();
+    };
 
 var internalClrLimitoverride = function(callback){
-                                    console.log("LIMITOVERRIDE:\tCLR");
-                                };
+        console.log("LIMITOVERRIDE:\tCLR");
+        callback();
+    };
+
+var internalLimitSwitch = function(callback){        
+        callback(-1);
+    };
 
 // Check operating system and load SPI interface if linux is detected.
 if (os.platform() === 'linux')
 {
     var gpio = require("pi-gpio");
+    function setGpio(pin,value, callback){
+       gpio.open(pin, "output", function(err) {  
+            if (err) throw err;
+            gpio.write(pin, value, function() {         
+                gpio.close(pin);  
+                callback();
+            });
+        });          
+    }
+    
+    
+    
     internalSetLimitoverride = function(callback)
     {
-        gpio.open(15, "output", function(err) {    // Open pin 16 for output
-            gpio.write(15, 1, function() {         // Set pin 16 high (1)
-            gpio.close(15);                        // Close pin 16
-        });
-        });  
+        setGpio(configuration.limitoverride.pin,configuration.limitoverride.setvalue, callback);
     };
     
     internalClrLimitoverride = function(callback)
     {
-        gpio.open(15, "output", function(err) {    // Open pin 16 for output
-            gpio.write(15, 0, function() {         // Set pin 16 low (0)
-            gpio.close(15);                        // Close pin 16
-        });
-        });  
-    };    
+        setGpio(configuration.limitoverride.pin,configuration.limitoverride.clrvalue, callback);
+    }; 
     
+    internalLimitSwitch = function(callback){        
+        callback(-1);
+    };
 }
 
-exports.clrLimitoverride = function ClrLimitoverride(){
-    internalClrLimitoverride();
-};
+exports.clrLimitoverride = internalClrLimitoverride;
 
-exports.SetLimitoverride = function ClrLimitoverride(){
-    internalSetLimitoverride();
-};
+exports.SetLimitoverride = internalSetLimitoverride;
+
+exports.onLimit = function onLimit(callback){        
+        internalLimitSwitch(function(value){
+           if(value === configuration.limitswitch.setvalue){
+               callback();
+           }
+        });
+    };
