@@ -110,7 +110,7 @@ router.route('/mode')
     .put(function(req, res){
         var request = eval(req.body);  
         var response = getResponseMessageOK("mode");       	
-        if (request.mode !== undef){
+        if (request.mode !== undefined){
             response.oldMode = hardware.getMode();
             hardware.setMode(request.mode);               
         }

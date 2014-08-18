@@ -82,8 +82,13 @@ exports.getDacValue = function getDacValue(){
     return configuration.dac.value;
 };
 
-exports.setDacValue = function setDacValue(newDacValue){    
-    configuration.dac.value = dac.setValue(newDacValue, emulatorActive);
+exports.setDacValue = function setDacValue(newDacValue){   
+    try{
+        configuration.dac.value = dac.setValue(newDacValue, emulatorActive);
+    }
+    catch(err){
+        
+    }
 };
 
 

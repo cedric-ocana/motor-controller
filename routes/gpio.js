@@ -10,16 +10,25 @@ var configuration = {"limitoverride":{"pin":11,"setvalue":1,"clrvalue":0},
     
 var internalSetLimitoverride = function(callback){
         console.log("LIMITOVERRIDE:\tSET");
-        callback();
+        if (callback !== undefined)
+        {
+            callback();
+        }
     };
 
 var internalClrLimitoverride = function(callback){
         console.log("LIMITOVERRIDE:\tCLR");
-        callback();
+        if (callback !== undefined)
+        {
+            callback();
+        }
     };
 
 var internalLimitSwitch = function(callback){        
-        callback(-1);
+        if (callback !== undefined)
+        {
+            callback(-1);
+        }
     };
 
 // Check operating system and load SPI interface if linux is detected.
@@ -31,7 +40,10 @@ if (os.platform() === 'linux')
             if (err) throw err;
             gpio.write(pin, value, function() {         
                 gpio.close(pin);  
-                callback();
+                if (callback !== undefined)
+                {
+                    callback();
+                }
             });
         });          
     }
@@ -49,7 +61,10 @@ if (os.platform() === 'linux')
     }; 
     
     internalLimitSwitch = function(callback){        
-        callback(-1);
+        if (callback !== undefined)
+        {
+            callback(-1);
+        }
     };
 }
 
@@ -60,7 +75,10 @@ exports.SetLimitoverride = internalSetLimitoverride;
 exports.onLimit = function onLimit(callback){        
         internalLimitSwitch(function(value){
            if(value === configuration.limitswitch.setvalue){
-               callback();
+                if (callback !== undefined)
+                {
+                    callback();
+                }
            }
         });
     };

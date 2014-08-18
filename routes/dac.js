@@ -56,6 +56,7 @@ exports.setValue = function setValue(newDacValue, emulator){
         setRealDacValue(newDacValue);
     }
     
+    
     var settings = {};	
     settings.dacValue = parseInt(newDacValue);	
     if (isNaN(settings.dacValue))
@@ -73,4 +74,23 @@ exports.setValue = function setValue(newDacValue, emulator){
         }
     }    
      
+}
+
+exports.setValueEmulator = function setValue(newDacValue){
+      return internalSetDac(setValueEmulator(newDacValue));     
+}
+
+exports.setValueEmulator = function setValueEmulator(newDacValue){
+    var dacValue = parseInt(newDacValue);	
+    if (isNaN(dacValue))
+    {				
+            console.log("Given value vas Not a number!");
+            var err ={};
+            err.msg = "Given value was not a number!";
+            throw error(err);
+    }
+    else
+    {
+        return assessDacRange(dacValue);      
+    }         
 }
