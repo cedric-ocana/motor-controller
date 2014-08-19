@@ -21,7 +21,7 @@ function assessDacRange(value)
 
 var internalSetDac = function(value, callback){
 						console.log("DAC:\t" + value);
-                                                return value;
+                                                callback(null);
                      };
 
 // Check operating system and load SPI interface if linux is detected.
@@ -45,52 +45,34 @@ if (os.platform() == 'linux')
 			//Default:  [0                 ][0        ][1                  ][ 1                  ]> value
 			//Default is 0x3x xx
 			txbuf.writeUInt8(txbuf.readUInt8(0) | 0x30,0);
-			spi.transfer(txbuf, rxbuf, callback("DAC" ,value));
-	}
+			spi.transfer(txbuf, rxbuf, callback);
+	};
 }
 
 
-exports.setValue = function setValue(newDacValue, emulator){
-    if (!emulator)
-    {
-        setRealDacValue(newDacValue);
-    }
-    
-    
-    var settings = {};	
-    settings.dacValue = parseInt(newDacValue);	
-    if (isNaN(settings.dacValue))
-    {				
-            console.log("Given value vas Not a number!");
-    }
-    else
-    {
-        if (emulator){
-            return assessDacRange(settings.dacValue);
-        }
-        else{
-            var value = assessDacRange(settings.dacValue);
-            return internalSetDac(value);
-        }
-    }    
-     
-}
 
-exports.setValueEmulator = function setValue(newDacValue){
-      return internalSetDac(setValueEmulator(newDacValue));     
-}
 
-exports.setValueEmulator = function setValueEmulator(newDacValue){
+function intSetValueEmulator(err, newDacValue){
+    if (err) throw err;
+    console.log(newDacValue);
     var dacValue = parseInt(newDacValue);	
     if (isNaN(dacValue))
     {				
             console.log("Given value vas Not a number!");
-            var err ={};
-            err.msg = "Given value was not a number!";
-            throw error(err);
+
+            throw new Error('Given parameter is not a number');
     }
     else
     {
         return assessDacRange(dacValue);      
     }         
 }
+
+exports.setValueEmulator = intSetValueEmulator;
+
+exports.setValue = function setValue(err, newDacValue){
+    if (err) throw err;
+    var dacValue = intSetValueEmulator(newDacValue);
+    internalSetDac(dacValue,function errorDuringSetDac(err){if (err) throw err}); 
+    return dacValue;
+};

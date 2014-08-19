@@ -19,6 +19,9 @@ function getResponseMessageERR(routeName, msg)
     return response;
 }
 
+function onErrorThrowIt(err){
+    if (err) throw err;
+}
 
 /*
  *                  GET     PUT     DELETE      POST
@@ -41,18 +44,17 @@ function setIntFromRequest(field, callback){
     {
         var newValue = parseInt(field);
         if (isNaN(newValue))  
-        {
-            console.log("Given value vas Not a number!: " + field);
+        {         
+            callback(new RangeError( "Parameter must be between " + 0 + " and " + 4096 ), null);
         }
         else
         {
-            console.log("Call back:" + callback);
-            callback(newValue);
+            callback(null, newValue);
         }   
     }
     else
     {
-        return getResponseMessageERR("Set Int From Request:", "value not defined");
+        callback(new RangeError( "Parameter not undefined."),null);
     }
 }
 
@@ -61,35 +63,44 @@ router.route('/adc')
 	var response = getResponseMessageOK("adc");      
         res.json(response);
     });
-    
+
+function generateResponse(err, routeSource, value, callback){
+    if(err){      
+        if (err.type){
+            var response = getResponseMessageERR(routeSource);
+            response.err = {};
+            response.err.source = err.source;
+            response.err.type = err.type;
+            callback(null,response);
+        }
+        else{
+            throw err;
+        }            
+    }
+    else{
+        var response = getResponseMessageOK(routeSource);
+        response.value = value;
+        callback(null, response);
+    }
+}
+
 router.route('/dac')
-    .get(function(req, res){        
-	var response = getResponseMessageOK("dac");
-        response.value = hardware.getDacValue();
-        res.json(response);
+    .get(function(req, res){              
+        generateResponse(null, 'dac', hardware.getDacValue(), function send(err, data){
+            res.json(data);
+        });
+        
+        
     })
     .put(function(req,res){
         var request = eval(req.body);
 	var response = getResponseMessageOK("dac");
-        response = setIntFromRequest(request.dacValue, hardware.setDacValue);
-//        if(request.dacValue !== undefined)
-//        {
-//            var newDacValue = parseInt( request.dacValue);
-//            if (isNaN(newDacValue))
-//            {				
-//                console.log("Given value vas Not a number!: " + request.dacValue);
-//            }
-//            else
-//            {            
-//                hardware.setDacValue(newDacValue);
-//            }
-//        }
-//        else
-//        {
-//            response = getResponseMessageERR("dac", "dacValue not defined");
-//        }
-        response.value = hardware.getDacValue();
-        res.json(response);                
+        
+        setIntFromRequest(request.dacValue, hardware.setDacValue);
+        
+        generateResponse(null, 'dac', hardware.getDacValue(), function send(err, data){
+            res.json(data);
+        });        
     });
 
 router.route('/mode')   
@@ -125,13 +136,13 @@ router.route('/mode')
 router.route('/gpio/limitoverride')              
     .delete(function(req, res){
         var response = getResponseMessageOK("limitoverride");       	
-        hardware.clrLimitoverride();
+        hardware.clrLimitoverride(onErrorThrowIt);
         res.json(response);
     })
     
     .put(function(req, res){          
         var response = getResponseMessageOK("limitoverride");       	
-        hardware.setLimitoverride();
+        hardware.setLimitoverride(onErrorThrowIt);
         res.json(response);
     });    
 
