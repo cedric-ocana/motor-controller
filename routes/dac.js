@@ -5,24 +5,25 @@
  */
 var os = require('os');
 
+var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2047}};
+
 function assessDacRange(value)
 {
-	var dac = {value:0, max:4096, min:0}
-	if(value > dac.max)
+	if(value > CONFIGURATION.DAC.RANGE.MAX)
 		{
-		value = dac.max;
+		value = CONFIGURATION.DAC.RANGE.MAX;
 	}
-	if(value < dac.min)
+	if(value < CONFIGURATION.DAC.RANGE.MIN)
 	{
-		value = dac.min;
+		value = CONFIGURATION.DAC.RANGE.MIN;
 	}
 	return value;
 }
 
 var internalSetDac = function(value, callback){
-						console.log("DAC:\t" + value);
-                                                callback(null);
-                     };
+        console.log("[Windows]\tDAC:\t" + value);
+        callback(null);
+    };
 
 // Check operating system and load SPI interface if linux is detected.
 if (os.platform() == 'linux')
@@ -49,18 +50,12 @@ if (os.platform() == 'linux')
 	};
 }
 
-
-
-
-function intSetValueEmulator(err, newDacValue){
-    if (err) throw err;
-    console.log(newDacValue);
+function intSetValueEmulator(err, newDacValue){    
+    if (err) throw err;    
     var dacValue = parseInt(newDacValue);	
     if (isNaN(dacValue))
-    {				
-            console.log("Given value vas Not a number!");
-
-            throw new Error('Given parameter is not a number');
+    {				           
+        throw new Error('Given parameter is not a number');
     }
     else
     {
@@ -70,9 +65,18 @@ function intSetValueEmulator(err, newDacValue){
 
 exports.setValueEmulator = intSetValueEmulator;
 
-exports.setValue = function setValue(err, newDacValue){
-    if (err) throw err;
-    var dacValue = intSetValueEmulator(newDacValue);
+function setValue(err, newDacValue){     
+    var dacValue = intSetValueEmulator(err, newDacValue);
     internalSetDac(dacValue,function errorDuringSetDac(err){if (err) throw err}); 
     return dacValue;
+}
+
+exports.setValue = setValue;
+
+exports.resetEmulator = function reset(err){
+    return intSetValueEmulator(err, CONFIGURATION.DAC.INIT);
+};
+
+exports.reset = function reset(err){
+    return setValue(err, CONFIGURATION.DAC.INIT);
 };

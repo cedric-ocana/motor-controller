@@ -9,11 +9,12 @@
  * Configuration of the hardware module.
  * As there is only one Hardware this configuration is valid for all clients. 
  */
-var configuration = {"mode":"emulator","dac":{"value":0.0}};
+var configuration = {"mode":"emulator","dac":{"value":0.0},"adc":{"value":0.0}};
 
 
 var dac = require('./dac.js');
 var gpio = require('./gpio.js');
+var adc = require('./adc.js');
 
 function emulatorActive(){
     return configuration.mode === "emulator";    
@@ -30,21 +31,22 @@ function dispatcher(callbackToNonEmulatedFunction, callbackToEmulatedFunction)
             return callbackToNonEmulatedFunction();
             
     }catch (exeption)
-    {
-        console.log(exeption.typeof(object));
+    {        
         console.log("Dispatching error. Emulator callback is ["  +
                 typeof(callbackToEmulatedFunction) + 
                 "] Real callback is [" + 
                 typeof(callbackToNonEmulatedFunction) +"]");        
-        return undef;
+        return undefined;
     }
 }
 
-exports.getMode = function getMode(){
+exports.getMode = function getMode(err){
+    if (err) throw err; 
     return configuration.mode;
 };
 
-exports.setMode = function setMode(newMode) {
+exports.setMode = function setMode(err, newMode) {
+    if (err) throw err; 
     if (newMode==="emulator")
     {
         configuration.mode = "emulator";
@@ -60,31 +62,48 @@ exports.setMode = function setMode(newMode) {
  * If possible then set to real mode if not continue with the emulatrion.
  * */
 
-exports.resetMode = function resetMode(){
+exports.resetMode = function resetMode(err){
+    if (err) throw err; 
     configuration.mode = "emulator";
-}
-exports.getAdc = function getAdc(){
-    return dispatcher(getAdcReal, getAdcEml);
 };
 
-function getAdcReal()
-{
-    return 1;
-}
+exports.getAdcValue = function getAdcValue(err){
+    if (err) throw err; 
+    if(emulatorActive()){
+        return configuration.adc.value;
+    }
+    else{
+        return adc.getValue();
+    }
+};
 
+exports.setAdcValue = function setAdcValue(err, value){
+    if (err) throw err; 
+    configuration.adc.value = value;
+};
 
-function getAdcEml()
-{
-    return 1.1;
-}
-
-exports.getDacValue = function getDacValue(){
+exports.getDacValue = function getDacValue(err){
+    if (err) throw err; 
     return configuration.dac.value;
 };
-
+exports.clrDacValue = function clrDacValue(err){ 
+    if (err) throw err; 
+    if (emulatorActive()){
+        configuration.dac.value = dac.resetEmulator(err);
+    }
+    else{
+        configuration.dac.value = dac.reset(err);
+    }
+    
+}
 exports.setDacValue = function setDacValue(err, newDacValue){   
-    if (err) throw err;
-    configuration.dac.value = dac.setValue(newDacValue);
+    if (err) throw err;    
+    if (emulatorActive()){
+        configuration.dac.value = dac.setValueEmulator(err, newDacValue);
+    }
+    else{
+        configuration.dac.value = dac.setValue(err, newDacValue);
+    }
 };
 
 

@@ -27,7 +27,7 @@ if (os.platform() === 'linux')
 {
     var gpio = require('pi-gpio');
     function setGpio(pin,value, callback){
-        gpio.close(pin);
+        gpio.close(pin);        
         gpio.open(pin, 'output', function(err) {  
             if (err) throw err;
             gpio.write(pin, value, function() {         
@@ -39,6 +39,7 @@ if (os.platform() === 'linux')
         
     internalSetLimitoverride = function(callback)
     {
+        internalClrLimitoverride();
         setGpio(CONFIGURATION.LIMITOVERRIDE.PIN,CONFIGURATION.LIMITOVERRIDE.SET, callback);
     };
     
@@ -59,7 +60,7 @@ exports.SetLimitoverride = internalSetLimitoverride;
 exports.onLimit = function onLimit(callback){        
         internalLimitSwitch(function(err, value){
             if (err) throw err;
-            if (value === configuration.limitswitch.setvalue){
+            if (value === CONFIGURATION.LIMITSWITCH.SET){
                 callback(null);
            }
         });
