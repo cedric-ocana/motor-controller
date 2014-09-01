@@ -5,7 +5,7 @@
  */
 var os = require('os');
 
-var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2047}};
+var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2625}};
 
 function assessDacRange(value)
 {

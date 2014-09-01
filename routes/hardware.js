@@ -95,7 +95,8 @@ exports.clrDacValue = function clrDacValue(err){
         configuration.dac.value = dac.reset(err);
     }
     
-}
+};
+
 exports.setDacValue = function setDacValue(err, newDacValue){   
     if (err) throw err;    
     if (emulatorActive()){
