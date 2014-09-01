@@ -157,7 +157,7 @@ router.route('/mode')
             });                       	
         }
         else{
-            generateResponse(new Error( "Called with undefined value parameter. Body: " + req.body), 'mode-put', hardware.getMode(), function send(err, data){
+            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), 'mode-put', hardware.getMode(), function send(err, data){
                 res.json(data);
             });                       	
         }
