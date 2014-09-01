@@ -49,6 +49,7 @@ function setIntFromRequest(field, callback){
         }
         else
         {            
+            console.log("OK value OK.");
             callback(null, newValue);
         }   
     }
@@ -90,6 +91,8 @@ router.route('/adc')
             res.json(data);
         });        
     });
+    
+    
 
 function generateResponse(err, routeSource, value, callback){
     if(err){              
@@ -115,17 +118,19 @@ function generateResponse(err, routeSource, value, callback){
 }
 
 router.route('/dac')
-    .get(function(req, res){              
+    .get(function(req, res){  
         generateResponse(null, 'dac-get', hardware.getDacValue(), function send(err, data){
             res.json(data);
         });               
     })
+    
     .delete(function(req, res){
         hardware.clrDacValue(null);
-        generateResponse(null, 'dac-set', hardware.getDacValue(), function send(err, data){
+        generateResponse(null, 'dac-delete', hardware.getDacValue(), function send(err, data){
             res.json(data);
         });        
-    })    
+    }) 
+    
     .put(function(req,res){       
         var request = eval(req.body);	    
         setIntFromRequest(request.value, hardware.setDacValue);        
@@ -177,5 +182,13 @@ router.route('/gpio/limitoverride')
         res.json(response);
     });    
 
+
+router.route('/speed')
+    .get(function(req, res){              
+        generateResponse(null, 'speed-get', hardware.getSpeed(), function send(err, data){
+            res.json(data);
+        });               
+    });
+    
 module.exports = router;
 

@@ -3,6 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 var os = require('os');
 
 var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2625}};
@@ -16,7 +17,7 @@ function assessDacRange(value)
 	if(value < CONFIGURATION.DAC.RANGE.MIN)
 	{
 		value = CONFIGURATION.DAC.RANGE.MIN;
-	}
+	}        
 	return value;
 }
 
@@ -35,9 +36,9 @@ if (os.platform() == 'linux')
 		'chipSelect': SPI.CS['low'] // 'none', 'high' - defaults to low
 	  }, function(s){s.open();});
 
-	internalSetDac = function(value, callback){
+	internalSetDac = function(value){
 			var txbuf = new Buffer(2);
-			var rxbuf = new Buffer(2);
+			var rxbuf = new Buffer(2);                        
 			txbuf.writeUInt16BE(value,0);
 
 			//MCP4821 12BIT Byte structure
@@ -46,7 +47,7 @@ if (os.platform() == 'linux')
 			//Default:  [0                 ][0        ][1                  ][ 1                  ]> value
 			//Default is 0x3x xx
 			txbuf.writeUInt8(txbuf.readUInt8(0) | 0x30,0);
-			spi.transfer(txbuf, rxbuf, callback);
+			spi.transfer(txbuf, rxbuf, null);
 	};
 }
 
@@ -59,24 +60,28 @@ function intSetValueEmulator(err, newDacValue){
     }
     else
     {
+        console.log("Go for assessDacRange");
         return assessDacRange(dacValue);      
     }         
 }
 
 exports.setValueEmulator = intSetValueEmulator;
 
-function setValue(err, newDacValue){     
+function internalSetValue(err, newDacValue){     
+    console.log("Go for internalSetValue");
     var dacValue = intSetValueEmulator(err, newDacValue);
-    internalSetDac(dacValue,function errorDuringSetDac(err){if (err) throw err}); 
+    internalSetDac(dacValue); 
     return dacValue;
 }
 
-exports.setValue = setValue;
+exports.setValue = internalSetValue;
 
 exports.resetEmulator = function reset(err){
-    return intSetValueEmulator(err, CONFIGURATION.DAC.INIT);
+    if (err) throw err;    
+    return CONFIGURATION.DAC.INIT;
 };
 
 exports.reset = function reset(err){
-    return setValue(err, CONFIGURATION.DAC.INIT);
+    if (err) throw err;    
+    return internalSetValue(err, CONFIGURATION.DAC.INIT);
 };

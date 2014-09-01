@@ -3,9 +3,8 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 var os = require('os');
-
-
 
 function calcAdc(adcValue)
 {
@@ -22,6 +21,10 @@ var internalGetAdc = function(){
 						return calcAdc(0x8000);
 					 };
                                          
+var internalGetAdcCallback = function(callback){
+						callback(null,0x8000);
+					 };                                       
+                                         
                                          
 // Check operating system and load i2c.
 if (os.platform() == 'linux')
@@ -29,15 +32,32 @@ if (os.platform() == 'linux')
 	var i2c = require('i2c');
 	var address = 0x48;
 	var wire = new i2c(address , { device: "/dev/i2c-1"});
+        
+        function sendCommand(callback){
+            wire.writeByte(0x0C,callback);
+        }
+        
+        function readBytes(callback){
+            wire.readBytes(0x0C,3,callback);
+        }
+        
 	internalGetAdc = function(){
 						wire.writeByte(0x0C, function(err){});
-						res = wire.readBytes(0x0C,3,function(err,res){});
+						res = wire.readBytes(0x0C,3,function(err,res){});                                                 
 						return calcAdc(res.readUInt16BE(0));
-					 }
+					 };
+                                         
+                                         
+        internalGetAdcCallback = function(callback){
+            sendCommand(readBytes(function convertToUint(err, res){                
+                callback(err, res.readUInt16BE(0));
+            }));                            
+        };
 }                                         
 
 
 
 
 // Functions which will be available to external callers
-exports.getAdcValue = internalGetAdc;
+exports.getValue = internalGetAdc;
+exports.getAdcValue = internalGetAdcCallback;

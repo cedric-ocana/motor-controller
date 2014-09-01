@@ -9,7 +9,8 @@
  * Configuration of the hardware module.
  * As there is only one Hardware this configuration is valid for all clients. 
  */
-var configuration = {"mode":"emulator","dac":{"value":0.0},"adc":{"value":0.0}};
+
+var configuration = {"mode":"real","dac":{"value":0},"adc":{"value":0.0}};
 
 
 var dac = require('./dac.js');
@@ -18,7 +19,7 @@ var adc = require('./adc.js');
 
 function emulatorActive(){
     return configuration.mode === "emulator";    
-};
+}
 
 exports.emulatorActive = emulatorActive();
 
@@ -86,34 +87,64 @@ exports.getDacValue = function getDacValue(err){
     if (err) throw err; 
     return configuration.dac.value;
 };
+
 exports.clrDacValue = function clrDacValue(err){ 
     if (err) throw err; 
     if (emulatorActive()){
         configuration.dac.value = dac.resetEmulator(err);
     }
     else{
-        configuration.dac.value = dac.reset(err);
+        configuration.dac.value = dac.reset(err);;
     }
     
 };
 
 exports.setDacValue = function setDacValue(err, newDacValue){   
     if (err) throw err;    
-    if (emulatorActive()){
+    if (emulatorActive()){        
         configuration.dac.value = dac.setValueEmulator(err, newDacValue);
     }
     else{
+        console.log("Go for SetDacValue");
         configuration.dac.value = dac.setValue(err, newDacValue);
     }
 };
 
 
-exports.setLimitoverride = function setLimitoverride()
-{
+exports.setLimitoverride = function setLimitoverride(){
     gpio.SetLimitoverride();
-}
+};
 
-exports.clrLimitoverride = function clrLimitoverride()
-{
+exports.clrLimitoverride = function clrLimitoverride(){
     gpio.clrLimitoverride();
-}
+};
+
+
+exports.getSpeed = function getSpeed(){
+    var startTime = process.hrtime();
+    
+    function calcSeconds(time){
+        return (time[0] * 1e9 + time[1]);
+    }
+    adc.getAdcValue(function(firstError, firstValue){        
+        var measTime = process.hrtime(startTime);
+        process.nextTick(adc.getAdcValue(function(secondError,secondValue){
+            var fullDuration = process.hrtime(startTime);
+            var dt = calcSeconds(fullDuration) - calcSeconds(measTime);
+            dt = dt / 1e9;
+            return (secondValue - firstValue) / dt;
+        }));
+        
+        var measurementTime = diff[0] * 1e9 + diff[1];
+        var time = process.hrtime()
+        
+    });
+    
+    setTimeout(function() {
+        
+        // [ 1, 552 ]
+
+        console.log('benchmark took %d nanoseconds', diff[0] * 1e9 + diff[1]);
+        // benchmark took 1000000527 nanoseconds
+    }, 1000);
+};
