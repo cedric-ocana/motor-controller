@@ -6,6 +6,7 @@
 
 var os = require('os');
 var unknownAdcValue = -1;
+exports.max = 0x8000;
 
 function calcAdc(adcValue)
 {

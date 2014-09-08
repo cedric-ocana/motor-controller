@@ -34,7 +34,10 @@ if (os.platform() == 'linux')
 	var spi = new SPI.Spi('/dev/spidev0.0', {
 		'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
 		'chipSelect': SPI.CS['low'] // 'none', 'high' - defaults to low
-	  }, function(s){s.open();});
+	  }, function(s){
+              s.close();
+              s.open();
+          });
 
 	internalSetDac = function(value){
 			var txbuf = new Buffer(2);
@@ -59,8 +62,7 @@ function intSetValueEmulator(err, newDacValue){
         throw new Error('Given parameter is not a number');
     }
     else
-    {
-        console.log("Go for assessDacRange");
+    {        
         return assessDacRange(dacValue);      
     }         
 }
@@ -68,7 +70,6 @@ function intSetValueEmulator(err, newDacValue){
 exports.setValueEmulator = intSetValueEmulator;
 
 function internalSetValue(err, newDacValue){     
-    console.log("Go for internalSetValue");
     var dacValue = intSetValueEmulator(err, newDacValue);
     internalSetDac(dacValue); 
     return dacValue;

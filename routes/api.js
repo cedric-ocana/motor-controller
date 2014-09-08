@@ -185,7 +185,7 @@ router.route('/gpio/limitoverride')
 
 router.route('/speed')
     .get(function(req, res){
-        hardware.getSpeed(function getSpeedSender(result){
+        hardware.getSpeed(null, function getSpeedSender(err, result){
             generateResponse(null, 'speed-get', (result.du / result.dt), function send(err, data){
                 data.result = result;
                 res.json(data);
@@ -212,7 +212,8 @@ router.route('/position')
     })
     .get(function(req, res){     
         hardware.getPosition(null, function getPositionSender(err, result){
-            generateResponse(err, 'position-get', result, function send(err, data){
+            generateResponse(err, 'position-get', result.position, function send(err, data){
+                data.data = result;
                 res.json(data);
             });                           
         });
