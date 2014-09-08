@@ -184,11 +184,39 @@ router.route('/gpio/limitoverride')
 
 
 router.route('/speed')
-    .get(function(req, res){              
-        generateResponse(null, 'speed-get', hardware.getSpeed(), function send(err, data){
-            res.json(data);
-        });               
+    .get(function(req, res){
+        hardware.getSpeed(function getSpeedSender(result){
+            generateResponse(null, 'speed-get', (result.du / result.dt), function send(err, data){
+                data.result = result;
+                res.json(data);
+            });                           
+        });
     });
+    
+    
+router.route('/position')
+    .put(function(req, res){
+        var request = eval(req.body);
+        if (request.value !== undefined){
+            hardware.setPosition(null, request.value, function setPositionSender(err, result){
+                generateResponse(null, 'position-set', result, function send(err, data){
+                    res.json(data);
+                });                           
+            });
+        }
+        else{
+            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), 'mode-put', hardware.getMode(), function send(err, data){
+                res.json(data);
+            });                       	
+        }
+    })
+    .get(function(req, res){     
+        hardware.getPosition(null, function getPositionSender(err, result){
+            generateResponse(err, 'position-get', result, function send(err, data){
+                res.json(data);
+            });                           
+        });
+    });    
     
 module.exports = router;
 
