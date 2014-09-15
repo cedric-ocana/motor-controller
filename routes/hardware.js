@@ -10,28 +10,49 @@
  * As there is only one Hardware this configuration is valid for all clients. 
  */
 
-var configuration = {"mode":"real",
+var dac = require('./dac.js');
+var gpio = require('./gpio.js');
+var adc = require('./adc.js');
+var os = require('os');
+
+var mode = "emulator";
+if (os.platform() === 'linux')
+{
+    mode = "real"
+}
+var configuration = {"mode":mode,
                     "dac":{"value":0},
-                    "adc":{"value":21000,
-                        "max":0x8000
+                    "adc":{
+                        "value":21000,
+                       /* Basic formula is:
+                        * h = n * ((r1 +r2) * 2 * pi * npot/nmax) + offset
+                        * h = n * multiplicator + offset
+                        * where:
+                        * h     := height of the antenna holding tray
+                        * r1    := the radius of the cylinder that coils up the cable
+                        * r2    := radius of the cable
+                        * nmax  := maximal value the adc may get
+                        * n     := value that was read out of the ADC
+                        * npot  := number of turns of the variable resistor
+                        * pi    := 3.141593    
+                        * offset:= The offset between measured and calculated values                
+                        */
+                        "multiplicator":0.0052729034423828125,
+                        "offset": 24.3 
                     },
                     "position":{
                         "actual":0,
                         "default":120,
-                        "tolerance":0.05,                        
-                        "adcCorrectionFactor": 0.0052729034423828125 //r * (2*pi*10/adcMax) = r * 0.00191741943359375 |r:=2.75cm
-                        }, //32768
+                        "tolerance":0.05                     
+                    }, //32768
                     "speed":{
                         "defaultdt":2625, //OK this value comes from a i7...
                         "up":800,
-                        "down":4095
+                        "down":4095,
+                        "tsampling":100
                     }                    
                     };
 
-
-var dac = require('./dac.js');
-var gpio = require('./gpio.js');
-var adc = require('./adc.js');
 
 function emulatorActive(){
     return configuration.mode === "emulator";    
@@ -153,22 +174,25 @@ function calcNanoSeconds(time){
 
 function internalGetSpeed(err, callback){
     var startTime = process.hrtime();
-    getAdcValueInternal(err,function(firstError, firstValue){
-        var fristIntermediateTime = process.hrtime();      
-        getAdcValueInternal(err,function(secondError,secondValue){            
-            var measurementDuration2 = calcNanoSeconds(process.hrtime(fristIntermediateTime));                        
-            var measurementDuration = calcNanoSeconds(fristIntermediateTime) - calcNanoSeconds(startTime);
-            var averageDuration = (measurementDuration + measurementDuration2)/2;
-            var diff = Math.abs( measurementDuration2 - measurementDuration)/2;
-            var dt =  averageDuration - diff;            
-            var result = {};
-            result.dt = (dt / 1e9);
-            result.du = (secondValue - firstValue);
-            result.adc  = secondValue;
-            configuration.adc.value = result.adc;
-            console.log("ADC fetching delay: " + result.dt + ", ADC difference: " + result.du);
-            callback(null, result);
-        });        
+    getAdcValueInternal(err,function(firstError, firstValue){        
+        setTimeout(function delayedGet(){
+            var fristIntermediateTime = process.hrtime(); 
+            getAdcValueInternal(err,function(secondError,secondValue){            
+                var measurementDuration2 = calcNanoSeconds(process.hrtime(fristIntermediateTime));                        
+                var measurementDuration = calcNanoSeconds(fristIntermediateTime) - calcNanoSeconds(startTime);
+                var averageDuration = (measurementDuration + measurementDuration2)/2;
+                var diff = Math.abs( measurementDuration2 - measurementDuration)/2;
+                var dt =  averageDuration - diff;            
+                var result = {};
+                result.dt = (dt / 1e9);
+                result.du = (secondValue - firstValue);
+                result.adc  = secondValue;
+                result.speed = result.du / result.dt;
+                configuration.adc.value = result.adc;
+                console.log("timeout:" + measurementDuration + "ADC fetching delay: " + result.dt + ", ADC difference: " + result.du);
+                callback(null, result);
+            }); 
+        },2000);
     });
 }
 exports.getSpeed = internalGetSpeed;
@@ -212,7 +236,7 @@ function inPosition(position, dt, okCallback, aboveCallback, belowCallback){
 
 function moveUp(err, targetPosition, data, dt){    
     if (emulatorActive()){
-        configuration.adc.value -= 100;
+        configuration.adc.value -= 5;
         console.log("MOVE-UP(EMULATION)");
     }
     else{
@@ -221,7 +245,7 @@ function moveUp(err, targetPosition, data, dt){
 }
 function moveDown(err, targetPosition, data,  dt){   
     if (emulatorActive()){
-        configuration.adc.value += 100;
+        configuration.adc.value += 5;
         console.log("MOVE-DOWN(EMULATION)");
     }
     else{
@@ -245,17 +269,18 @@ exports.setPosition = function setPosition(err, position, callback){
     console.log("Target: " + position * 10 + "mm, Current: " + configuration.position.actual * 10  + "mm, dt:" + (dt|0) + "ns, avg:" + (avg|0) + "ns");   
 };
 
+function getPositionFromAdcValue(adcValue){     
+    with (configuration.adc){
+        return (adc.max - adcValue) * multiplicator + offset;
+    }
+}
+
 function getPositionInternal(err, callback){      
     internalGetSpeed(err, function(err, value){
-        if (err) throw err; 
-        var result = {};
-        result.du = value.du;
-        result.dt = value.dt;
-        result.adc = value.adc;
-        result.speed = value.du/value.dt;
-        result.position = (adc.max-value.adc) * configuration.position.adcCorrectionFactor + 24.33842163085937;        
+        if (err) throw err;         
+        value.position = getPositionFromAdcValue(value.adc);
         //console.log("Calculated Value: " + result.position  +"\t ADC - Value: " + result.adc);
-        callback(null, result);
+        callback(null, value);
     });
 }
 
