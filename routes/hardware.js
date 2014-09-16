@@ -61,7 +61,9 @@ var configuration = {"mode":mode,
                             "fast":4095,
                             "slow":3700
                             },                        
-                        "tsampling":100
+                        "tsampling":100,
+                        "dtDeceleration":10,
+                        "dtAcceleration":10
                         }                                  
                     };
 
@@ -147,32 +149,38 @@ exports.getDacValue = function getDacValue(err){
     return configuration.dac.value;
 };
 
-function decelerate(index, deltaSpeed, targetSpeed, delay, callback){
-    dac.setValue(null, targetSpeed - deceleration[index] * deltaSpeed);
-    if (index < deceleration.length){
-        setTimeout(function(){
-            decelerate(++index, deltaSpeed, targetSpeed, delay, callback);
-        },delay);
+function changeSpeed(vTarget, callback){
+    var vDelta = vTarget - configuration.dac.value;
+    with (configuration.speed){
+        if (vDelta > 0){
+            celerate(0, vDelta, vTarget, dtDeceleration, deceleration , callback);            
+        }
+        else{
+            celerate(0, vDelta, vTarget, dtAcceleration, acceleration , callback);
+        }    
+    }
+}
+
+function celerate(index, vDelta, vTarget, dt, table, callback){    
+    setDacValueInternal(null,(vTarget - table[index] * vDelta));
+    if ((table[index] * vDelta ) > 1){
+        if (index++ < table.length - 1){
+            setTimeout(function recursiveCallCelerate(){
+                celerate(index, vDelta, vTarget, dt, callback);
+            },dt);
+        }
+        else{
+            callback();
+        }
     }
     else{
         callback();
-    }
-    
+    }    
 }
-
 
 function clrDacValueInternal(err){ 
     if (err) throw err; 
-    if (emulatorActive()){
-        configuration.dac.value = dac.resetEmulator(err);
-    }
-    else{
-        var dspeed = configuration.speed.default - configuration.dac.value; 
-        decelerate(0, dspeed, configuration.speed.default, 20, function(){});
-   
-        configuration.dac.value = dac.reset(err);
-    }
-    
+    changeSpeed(configuration.speed.default, function(){});    
 }
 
 exports.clrDacValue = clrDacValueInternal;
@@ -182,6 +190,7 @@ function setDacValueInternal(err, newDacValue){
     // = newDacValue;
     if (emulatorActive()){        
         configuration.dac.value = dac.setValueEmulator(err, newDacValue);
+        console.log("DAC:" + configuration.dac.value);
     }
     else{
         
