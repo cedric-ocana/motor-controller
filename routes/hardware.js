@@ -14,6 +14,7 @@ var dac = require('./dac.js');
 var gpio = require('./gpio.js');
 var adc = require('./adc.js');
 var os = require('os');
+var redis = require('redis');
 
 var mode = "emulator";
 if (os.platform() === 'linux')
@@ -350,7 +351,7 @@ function gotToPosition(err, startSpeed, targetPosition, okCallback){
     var limit = {};       
     limit.max = targetPosition + configuration.position.tolerance;
     limit.min = targetPosition - configuration.position.tolerance; 
-    previousCall();
+    previousCall(null, targetPosition);
     previousCall = okCallback;
     setTimeout(function(){getPositionInternal(err, function(err, data){
         if (err) throw err;                 
