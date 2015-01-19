@@ -66,6 +66,9 @@ var configuration = {"mode":mode,
                         "dtAcceleration":10
                         }                                  
                     };
+                    
+                    
+var previousCall = function(){};               
 
 
 function emulatorActive(){
@@ -346,7 +349,9 @@ function getPositionInternal(err, callback){
 function gotToPosition(err, startSpeed, targetPosition, okCallback){
     var limit = {};       
     limit.max = targetPosition + configuration.position.tolerance;
-    limit.min = targetPosition - configuration.position.tolerance;    
+    limit.min = targetPosition - configuration.position.tolerance; 
+    previousCall();
+    previousCall = okCallback;
     setTimeout(function(){getPositionInternal(err, function(err, data){
         if (err) throw err;                 
         with (data){            
@@ -367,6 +372,7 @@ function gotToPosition(err, startSpeed, targetPosition, okCallback){
                 }
                 else{  
                     clrDacValueInternal(null);
+                    previousCall = function(){};
                     okCallback(null, data.position);
                 }
             }
