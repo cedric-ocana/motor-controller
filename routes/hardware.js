@@ -42,7 +42,7 @@ var configuration = {"mode":mode,
                         * offset:= The offset between measured and calculated values                
                         */
                         "multiplicator":0.0052729034423828125,
-                        "offset": 24.3 
+                        "offset": 198.4
                     },
                     "position":{
                         "actual":0,

@@ -35,7 +35,7 @@ var internalGetAdcCallback = function(err, callback){
 if (os.platform() === 'linux')
 {
 	var i2c = require('i2c');
-	var address = 0x48;
+	var address = 0x49;
 	var wire = new i2c(address , { device: "/dev/i2c-1"});
         
         function sendCommand(callback){
