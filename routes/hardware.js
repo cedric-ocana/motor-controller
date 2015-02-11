@@ -165,7 +165,8 @@ function changeSpeed(vTarget, callback){
     }
 }
 
-function celerate(index, vDelta, vTarget, dt, table, callback){    
+function celerate(index, vDelta, vTarget, dt, table, callback) {
+    console.log("vTarget:" + vTarget + "Index:"+index + "vDelta:"+vDelta)
     setDacValueInternal(null,(vTarget - table[index] * vDelta));
     if ((table[index] * vDelta ) > 1){
         if (index++ < table.length - 1){
