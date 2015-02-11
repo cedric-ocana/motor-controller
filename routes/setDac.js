@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
-var os = require('os');
-//var tools = require('tools');
+var tools = require('./tools.js');
+
 
  
 function assessDacRange(value)
@@ -23,7 +23,7 @@ var internalSetDac = function(value, callback){
 					 };
 					 
 // Check operating system and load SPI interface if linux is detected.
-if (os.platform() == 'linux')
+if (tools.hardwareAvailable())
 {
 	// HW - interaction initial definition
 	var SPI = require('spi');

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var os = require('os');
+var tools = require('./tools.js');
 
 var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":"11","SET":1,"CLR":0,"INIT":0},
                      "LIMITSWITCH":{"PIN":12,"SET":1,"CLR":0}};
@@ -23,7 +23,7 @@ var internalLimitSwitch = function(callback){
     };
 
 // Check operating system and load SPI interface if linux is detected.
-if (os.platform() === 'linux')
+if (tools.hardwareAvailable())
 {
     var gpio = require('pi-gpio');
     function setGpio(pin,value, callback){

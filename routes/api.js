@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router(); 
 
 var hardware = require('./hardware.js');
+var tools = require('./tools.js');
 
 function getResponseMessageOK( routeName)
 {

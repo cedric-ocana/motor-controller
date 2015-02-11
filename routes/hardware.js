@@ -13,11 +13,11 @@
 var dac = require('./dac.js');
 var gpio = require('./gpio.js');
 var adc = require('./adc.js');
-var os = require('os');
+var tools = require('./tools.js');
 var redis = require('redis');
 
 var mode = "emulator";
-if (os.platform() === 'linux')
+if (tools.hardwareAvailable())
 {
     mode = "real"
 }

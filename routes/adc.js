@@ -5,6 +5,8 @@
  */
 
 var os = require('os');
+var tools = require('./tools.js');
+
 var unknownAdcValue = -1;
 exports.max = 0x8000;
 
@@ -32,7 +34,7 @@ var internalGetAdcCallback = function(err, callback){
 
                                          
 // Check operating system and load i2c.
-if (os.platform() === 'linux')
+if (tools.hardwareAvailable())
 {
 	var i2c = require('i2c');
 	var address = 0x49;

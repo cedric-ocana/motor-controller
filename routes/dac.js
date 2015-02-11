@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-var os = require('os');
+var tools = require('./tools.js');
 
 var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2048}};
 
@@ -26,8 +26,9 @@ var internalSetDac = function(value, callback){
         callback(null);
     };
 
-// Check operating system and load SPI interface if linux is detected.
-if (os.platform() == 'linux')
+// Check operating system and load SPI interface if pi is detected.
+
+if (tools.hardwareAvailable())
 {
 	// HW - interaction initial definition
 	var SPI = require('spi');
