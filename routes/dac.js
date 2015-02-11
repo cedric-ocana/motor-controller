@@ -6,7 +6,7 @@
 
 var os = require('os');
 
-var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2625}};
+var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2048}};
 
 function assessDacRange(value)
 {
@@ -59,7 +59,7 @@ function intSetValueEmulator(err, newDacValue){
     var dacValue = parseInt(newDacValue);	
     if (isNaN(dacValue))
     {				           
-        throw new Error('Given parameter is not a number');
+        throw new Error('Given parameter is not a number: '+ newDacValue);
     }
     else
     {        
@@ -70,19 +70,27 @@ function intSetValueEmulator(err, newDacValue){
 exports.setValueEmulator = intSetValueEmulator;
 
 function internalSetValue(err, newDacValue){     
-    var dacValue = intSetValueEmulator(err, newDacValue);
+    var dacValue = intSetValueEmulator(function resetOnDacError(originalErr)
+                                       {
+                                            reset(err);
+                                       }, newDacValue);
     internalSetDac(dacValue); 
     return dacValue;
 }
 
 exports.setValue = internalSetValue;
 
-exports.resetEmulator = function reset(err){
-    if (err) throw err;    
+function resetEmulator(err) {
     return CONFIGURATION.DAC.INIT;
+    if (err) throw err;
 };
 
-exports.reset = function reset(err){
-    if (err) throw err;    
+
+
+function reset(err) {
     return internalSetValue(err, CONFIGURATION.DAC.INIT);
+    if (err) throw err;    
 };
+
+exports.resetEmulator = resetEmulator;
+exports.reset = reset;
