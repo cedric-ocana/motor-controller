@@ -192,6 +192,13 @@ router.route('/speed')
                 res.json(data);
             });                           
         });
+    })
+    .delete(function (req, res) {
+    hardware.clrSpeed(null, function getSpeedSender(err, result) {
+        generateResponse(null, 'speed-delete',0, function send(err, data) {           
+            res.json(data);
+        });
+    });
     });
     
     

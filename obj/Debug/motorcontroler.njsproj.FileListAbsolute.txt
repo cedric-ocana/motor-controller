@@ -1,0 +1,2 @@
+C:\Users\cedric\Documents\GitHub\motor-controller\obj\Debug\motorcontroler.njsprojResolveAssemblyReference.cache
+C:\Users\cedric\Documents\GitHub\motor-controller\bin\Microsoft.NodejsTools.WebRole.dll

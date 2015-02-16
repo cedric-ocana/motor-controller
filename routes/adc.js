@@ -9,6 +9,7 @@ var tools = require('./tools.js');
 
 var unknownAdcValue = -1;
 exports.max = 0x8000;
+exports.min = 0x0000;
 
 function calcAdc(adcValue)
 {

@@ -95,3 +95,15 @@ function reset(err) {
 
 exports.resetEmulator = resetEmulator;
 exports.reset = reset;
+
+exports.max = function getMax(){
+    return CONFIGURATION.DAC.RANGE.MAX;
+}
+
+exports.min = function getMin() {
+    return CONFIGURATION.DAC.RANGE.MIN;
+}
+
+exports.init = function getInit() {
+    return CONFIGURATION.DAC.INIT;
+}

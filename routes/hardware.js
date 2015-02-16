@@ -24,6 +24,10 @@ if (tools.hardwareAvailable())
 var acceleration = [0.001,0.004,0.009,0.016,0.024,0.035,0.048,0.062,0.078,0.095,0.115,0.136,0.158,0.181,0.206,0.232,0.259,0.287,0.316,0.345,0.376,0.406,0.437,0.469,0.5,0.531,0.563,0.594,0.624,0.655,0.684,0.713,0.741,0.768,0.794,0.819,0.842,0.864,0.885,0.905,0.922,0.938,0.952,0.965,0.976,0.984,0.991,0.996,0.999,1];
 var deceleration = [0.999,0.996,0.991,0.984,0.976,0.965,0.952,0.938,0.922,0.905,0.885,0.864,0.842,0.819,0.794,0.768,0.741,0.713,0.684,0.655,0.624,0.594,0.563,0.531,0.5,0.469,0.437,0.406,0.376,0.345,0.316,0.287,0.259,0.232,0.206,0.181,0.158,0.136,0.115,0.095,0.078,0.062,0.048,0.035,0.024,0.016,0.009,0.004,0.001,0];
 
+function getSpeed(signedRatio){
+    return dac.init() + dac.init() * signedRatio;
+}
+
 var configuration = {"mode":mode,
                     "dac":{"value":0},
                     "adc":{
@@ -47,24 +51,41 @@ var configuration = {"mode":mode,
                     "position":{
                         "actual":0,
                         "default":120,
-                        "tolerance":0.05                     
+                        "tolerance":0.05
                     }, //32768
                     "speed":{
                         "default":dac.resetEmulator(null), //OK this value comes from a i7...
-                        "up":{
-                            "normal":1250,
-                            "fast":0,
-                            "slow":1500
+                        "up": {
+                            "fast": {
+                                "distance": 100,
+                                "speed": getSpeed(-1.00)
                             },
-                        
-                        "down":{
-                            "normal":3950,
-                            "fast":4095,
-                            "slow":3700
-                            },                        
+                            "normal": {
+                                "distance": 50,
+                                "speed": getSpeed(-0.75)
+                            },
+                            "slow": {
+                                "distance": 10,
+                                "speed": getSpeed(-0.25)
+                            }
+                        },
+                        "down": {
+                            "fast": {
+                                "distance": 100,
+                                "speed": getSpeed(1.00)
+                            },
+                            "normal": {
+                                "distance": 50,
+                                "speed": getSpeed(0.75)
+                            },
+                            "slow": {
+                                "distance": 10,
+                                "speed": getSpeed(0.25)
+                            }
+                        },                                               
                         "tsampling":100,
                         "dtDeceleration":10,
-                        "dtAcceleration":10
+                        "dtAcceleration": 10,                        
                         }                                  
                     };
                     
@@ -131,7 +152,16 @@ function getAdcValueInternal(err, callback){
         }
     }
     else{
-        if(emulatorActive()){
+        if (emulatorActive()) {
+            //console.log("Old value:" + configuration.adc.value);
+            configuration.adc.value = configuration.adc.value + 0.0001 * (dac.init() - configuration.dac.value);
+            if (configuration.adc.value > adc.max) {
+                configuration.adc.value = adc.max;
+            }
+            if (configuration.adc.value < adc.min) {
+                configuration.adc.value = adc.min;
+            }
+            //console.log("New value:" + configuration.adc.value);            
             callback(null, configuration.adc.value);
         }
         else{
@@ -154,25 +184,30 @@ exports.getDacValue = function getDacValue(err){
 };
 
 function changeSpeed(vTarget, callback){
-    var vDelta = vTarget - configuration.dac.value;
+    var vDelta = vTarget - configuration.dac.value;    
     with (configuration.speed){
-        if (vDelta > 0){
+        if (vDelta != 0) {
+            console.log("Current, Target, delta: " + configuration.dac.value + ", " + vTarget + ", " + vDelta);
             celerate(0, vDelta, vTarget, dtDeceleration, deceleration , callback);            
         }
-        else{
-            celerate(0, vDelta, vTarget, dtAcceleration, acceleration , callback);
-        }    
+        callback();   
     }
 }
 
+
 function celerate(index, vDelta, vTarget, dt, table, callback) {
-    console.log("vTarget:" + vTarget + "Index:"+index +"Value:" +table[index]+ "vDelta:"+vDelta)
-    setDacValueInternal(null,(vTarget - table[index] * vDelta));
-    if ((table[index] * vDelta ) > 1){
+    var value = deceleration[index];
+    if (acceleration[0] == table[0]) {
+        value = acceleration[index];
+    }
+    value = table[index];
+    console.log("vTarget:" + vTarget + ",Index:" + index + "Value:" + (vTarget - value * vDelta));
+    setDacValueInternal(null,(vTarget - value * vDelta));
+    if ((value * vDelta ) > 1){
         if (index++ < table.length - 1){
-            setTimeout(function recursiveCallCelerate(){
-                celerate(index, vDelta, vTarget, dt, callback);
-            },dt);
+            //setTimeout(function recursiveCallCelerate(){
+                celerate(index, vDelta, vTarget, dt, table, callback);
+            //},dt);
         }
         else{
             callback();
@@ -183,11 +218,12 @@ function celerate(index, vDelta, vTarget, dt, table, callback) {
     }    
 }
 
-function clrDacValueInternal(err){ 
+function clrDacValueInternal(err, callback){ 
     if (err) throw err; 
-    changeSpeed(configuration.speed.default, function(){});    
+    changeSpeed(configuration.speed.default, callback);    
 }
 
+exports.clrSpeed = clrDacValueInternal;
 exports.clrDacValue = clrDacValueInternal;
 
 function setDacValueInternal(err, newDacValue){   
@@ -261,57 +297,30 @@ function inPosition(position, tCall, okCallback, aboveCallback, belowCallback){
                 inPosition(position, process.hrtime(), okCallback, aboveCallback, belowCallback)
             }
             else{  
-                clrDacValueInternal(null);
+                clrDacValueInternal(null, function () { });
                 okCallback(null, data.position);
             }     
         }                
     });
 }
 
-
-function moveUp(err, distance,callback){    
-    if (emulatorActive()){
-        configuration.adc.value -= 5;
-        console.log("MOVE-UP(EMULATION)");
+function move(err, distance, settings, callback){
+    if (distance <= settings.slow.distance) {
+        changeSpeed(settings.slow.speed, callback);
     }
-    else{
-        var dacValue = configuration.speed.default;
-        with (configuration.speed.up){
-            
-            dacValue = slow;
-                       
-            if(distance > 5){
-                dacValue = normal;
-            }
-            if(distance > 10){
-                dacValue = fast;
-            }   
-        }              
-        setDacValueInternal(null, dacValue);
+    if (distance <= settings.normal.distance) {
+        changeSpeed(settings.normal.speed, callback);
     }
-    
+    if (distance > settings.fast.distance) {
+        changeSpeed(settings.fast.speed, callback);
+    }
     callback();
 }
-function moveDown(err, distance, callback){   
-    if (emulatorActive()){
-        configuration.adc.value += 5;
-        console.log("MOVE-DOWN(EMULATION)");
-    } 
-    else{
-        var dacValue = configuration.speed.default;
-        with (configuration.speed.down){
-            dacValue = slow;
-                       
-            if(distance > 5){
-                dacValue = normal;
-            }
-            if(distance > 10){
-                dacValue = fast;
-            }   
-        }              
-        setDacValueInternal(null, dacValue);
-    }
-    callback();
+function moveUp(err, distance, callback){
+    move(err, distance, configuration.speed.up, callback);
+}
+function moveDown(err, distance, callback){
+    move(err, distance, configuration.speed.down, callback);
 }
 
 exports.setPosition = function setPosition(err, position, callback){  
@@ -351,9 +360,13 @@ function getPositionInternal(err, callback){
 function gotToPosition(err, startSpeed, targetPosition, okCallback){
     var limit = {};       
     limit.max = targetPosition + configuration.position.tolerance;
-    limit.min = targetPosition - configuration.position.tolerance; 
-    previousCall(null, targetPosition);
-    previousCall = okCallback;
+    limit.min = targetPosition - configuration.position.tolerance;
+    if (emulatorActive()) {
+        
+    }
+
+    //previousCall(null, targetPosition);
+    //previousCall = okCallback;
     setTimeout(function(){getPositionInternal(err, function(err, data){
         if (err) throw err;                 
         with (data){            
@@ -373,7 +386,7 @@ function gotToPosition(err, startSpeed, targetPosition, okCallback){
                                       
                 }
                 else{  
-                    clrDacValueInternal(null);
+                    clrDacValueInternal(null,function() { });
                     previousCall = function(){};
                     okCallback(null, data.position);
                 }
