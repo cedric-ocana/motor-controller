@@ -118,6 +118,8 @@ function generateResponse(err, routeSource, value, callback){
     }
 }
 
+
+
 router.route('/dac')
     .get(function(req, res){  
         generateResponse(null, 'dac-get', hardware.getDacValue(), function send(err, data){
@@ -180,6 +182,21 @@ router.route('/gpio/limitoverride')
     .put(function(req, res){          
         var response = getResponseMessageOK("limitoverride");       	
         hardware.setLimitoverride(onErrorThrowIt);
+        res.json(response);
+    });    
+    
+
+router.route('/gpio/motordriver')              
+    .delete(function(req, res){
+        var response = getResponseMessageOK("motordriver");       	
+        hardware.disableMotor(onErrorThrowIt);
+        res.json(response);
+    })
+    
+    
+    .put(function(req, res){          
+        var response = getResponseMessageOK("motordriver");       	
+        hardware.enableMotor(onErrorThrowIt);
         res.json(response);
     });    
 
