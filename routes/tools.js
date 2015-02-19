@@ -6,5 +6,14 @@
 var os = require('os');
 
 exports.hardwareAvailable = function hardwareAvailable() {
-    return os.hostname() == 'pi';
+    if (os.hostname() === 'mk-mast1')
+    {
+        return true;
+    }
+    else
+    {
+        console.log("NOT PI! But:" + os.hostname() );
+        return false;
+    }
+   
 };

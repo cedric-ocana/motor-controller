@@ -84,8 +84,8 @@ var configuration = {"mode":mode,
                             }
                         },                                               
                         "tsampling":100,
-                        "dtDeceleration":10,
-                        "dtAcceleration": 10,                        
+                        "dtDeceleration":1,
+                        "dtAcceleration": 1                        
                         }                                  
                     };
                     
@@ -186,56 +186,66 @@ exports.getDacValue = function getDacValue(err){
 function changeSpeed(vTarget, callback){
     var vDelta = vTarget - configuration.dac.value;    
     with (configuration.speed){
-        if (vDelta != 0) {
-            console.log("Current, Target, delta: " + configuration.dac.value + ", " + vTarget + ", " + vDelta);
+        if (vDelta !== 0) {
+            //console.log("Current, Target, delta: " + configuration.dac.value + ", " + vTarget + ", " + vDelta);
             celerate(0, vDelta, vTarget, dtDeceleration, deceleration , callback);            
         }
-        callback();   
+        callback(null);   
     }
 }
 
 
 function celerate(index, vDelta, vTarget, dt, table, callback) {
     var value = deceleration[index];
-    if (acceleration[0] == table[0]) {
+    if (acceleration[0] === table[0]) {
         value = acceleration[index];
     }
     value = table[index];
-    console.log("vTarget:" + vTarget + ",Index:" + index + "Value:" + (vTarget - value * vDelta));
+    //console.log("vTarget:" + vTarget + ",Index:" + index + "Value:" + (vTarget - value * vDelta));
     setDacValueInternal(null,(vTarget - value * vDelta));
-    if ((value * vDelta ) > 1){
-        if (index++ < table.length - 1){
-            //setTimeout(function recursiveCallCelerate(){
-                celerate(index, vDelta, vTarget, dt, table, callback);
-            //},dt);
-        }
-        else{
-            callback();
-        }
+
+    if (index++ < table.length - 1){
+        setTimeout(function recursiveCallCelerate(){
+            celerate(index, vDelta, vTarget, dt, table, callback);
+        },dt);
     }
     else{
         callback();
-    }    
+    }
+      
 }
 
-function clrDacValueInternal(err, callback){ 
+function clrSpeedValueInternal(err, callback){ 
     if (err) throw err; 
     changeSpeed(configuration.speed.default, callback);    
 }
+exports.clrSpeed = clrSpeedValueInternal;
 
-exports.clrSpeed = clrDacValueInternal;
+function setSpeedValueInternal(err, value, callback){ 
+    if (err) throw err; 
+    changeSpeed(value, callback);    
+}
+exports.setSpeed = setSpeedValueInternal;
+
+function clrDacValueInternal(err, callback){ 
+    if (err) throw err; 
+    setDacValueInternal(null,configuration.speed.default);
+    callback();
+}
 exports.clrDacValue = clrDacValueInternal;
-
+function setDacCach(err, value){
+    if (err) throw err;
+    configuration.dac.value = value;
+}
 function setDacValueInternal(err, newDacValue){   
     if (err) throw err;
     // = newDacValue;
     if (emulatorActive()){        
-        configuration.dac.value = dac.setValueEmulator(err, newDacValue);
+        dac.setValueEmulator(err, newDacValue, setDacCach);
         console.log("DAC:" + configuration.dac.value);
     }
     else{
-        
-        configuration.dac.value = dac.setValue(err, newDacValue);
+        dac.setValue(err, newDacValue, setDacCach);
     }
 }
 
@@ -329,17 +339,7 @@ exports.setPosition = function setPosition(err, position, callback){
     var dt = configuration.speed.defaultdt;
     var avg = dt;        
     console.log("Target: " + ((position * 10)|0) + "mm, Current: " + ((configuration.position.actual * 10)|0) + "mm, dt:" + (dt|0) + "ns, avg:" + (avg|0) + "ns");    
-    //err, startSpeed, targetPositon, okCallback
-    gotToPosition(null,0, position,callback);
-    //inPosition(position,process.hrtime(), callback,moveDown, moveUp);
-    /*while (inPosition(position,avg, callback,moveDown, moveUp) === false){  
-        intermediateTime1 = process.hrtime();
-        dt = (calcNanoSeconds(intermediateTime1)-calcNanoSeconds(intermediateTime));
-        avg = ((avg + dt) / 2);
-        //console.log("Target: " + ((position * 10)|0) + "mm, Current: " + ((configuration.position.actual * 10)|0) + "mm, dt:" + (dt|0) + "ns, avg:" + (avg|0) + "ns");   
-        intermediateTime = process.hrtime();
-    } */      
-    //console.log("Target: " + position * 10 + "mm, Current: " + configuration.position.actual * 10  + "mm, dt:" + (dt|0) + "ns, avg:" + (avg|0) + "ns");   
+     gotToPosition(null,0, position,callback);
 };
 
 function getPositionFromAdcValue(adcValue){     
@@ -398,3 +398,11 @@ function gotToPosition(err, startSpeed, targetPosition, okCallback){
 
 
 exports.getPosition = getPositionInternal;
+
+
+exports.enableMotor =  gpio.enableDriver;
+exports.disableMotor =  gpio.disableDriver;
+exports.setLimitoverride =  gpio.setLimitoverride;
+exports.clrLimitoverride =  gpio.clrLimitoverride;
+
+exports.getLimitswitch = gpio.getLimitswitch;

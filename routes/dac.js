@@ -8,7 +8,7 @@ var tools = require('./tools.js');
 
 var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2048}};
 
-function assessDacRange(value)
+function assessDacRange(value, callback)
 {
 	if(value > CONFIGURATION.DAC.RANGE.MAX)
 		{
@@ -18,12 +18,12 @@ function assessDacRange(value)
 	{
 		value = CONFIGURATION.DAC.RANGE.MIN;
 	}        
-	return value;
+	callback(null, value);
 }
 
 var internalSetDac = function(value, callback){
         console.log("[Windows]\tDAC:\t" + value);
-        callback(null);
+        callback(null, value);
     };
 
 // Check operating system and load SPI interface if pi is detected.
@@ -40,7 +40,7 @@ if (tools.hardwareAvailable())
               s.open();
           });
 
-	internalSetDac = function(value){
+	internalSetDac = function(value, callback){
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);                        
 			txbuf.writeUInt16BE(value,0);
@@ -51,11 +51,13 @@ if (tools.hardwareAvailable())
 			//Default:  [0                 ][0        ][1                  ][ 1                  ]> value
 			//Default is 0x3x xx
 			txbuf.writeUInt8(txbuf.readUInt8(0) | 0x30,0);
-			spi.transfer(txbuf, rxbuf, null);
+			spi.transfer(txbuf, rxbuf, function(){
+                            callback(null, value);
+                        });
 	};
 }
 
-function intSetValueEmulator(err, newDacValue){    
+function intSetValueEmulator(err, newDacValue, callback){    
     if (err) throw err;    
     var dacValue = parseInt(newDacValue);	
     if (isNaN(dacValue))
@@ -64,19 +66,17 @@ function intSetValueEmulator(err, newDacValue){
     }
     else
     {        
-        return assessDacRange(dacValue);      
+        assessDacRange(dacValue, callback);      
     }         
 }
 
 exports.setValueEmulator = intSetValueEmulator;
 
-function internalSetValue(err, newDacValue){     
-    var dacValue = intSetValueEmulator(function resetOnDacError(originalErr)
-                                       {
-                                            reset(err);
-                                       }, newDacValue);
-    internalSetDac(dacValue); 
-    return dacValue;
+function internalSetValue(err, newDacValue, callback){   
+    if (err) throw err;  
+    intSetValueEmulator(null, newDacValue, function(err, value){
+        internalSetDac(value, callback);
+    });
 }
 
 exports.setValue = internalSetValue;
@@ -89,7 +89,7 @@ function resetEmulator(err) {
 
 
 function reset(err) {
-    return internalSetValue(err, CONFIGURATION.DAC.INIT);
+    return internalSetDac(CONFIGURATION.DAC.INIT,function(){});
     if (err) throw err;    
 };
 
@@ -98,12 +98,12 @@ exports.reset = reset;
 
 exports.max = function getMax(){
     return CONFIGURATION.DAC.RANGE.MAX;
-}
+};
 
 exports.min = function getMin() {
     return CONFIGURATION.DAC.RANGE.MIN;
-}
+};
 
 exports.init = function getInit() {
     return CONFIGURATION.DAC.INIT;
-}
+};

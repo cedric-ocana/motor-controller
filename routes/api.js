@@ -128,10 +128,11 @@ router.route('/dac')
     })
     
     .delete(function(req, res){
-        hardware.clrDacValue(null);
-        generateResponse(null, 'dac-delete', hardware.getDacValue(), function send(err, data){
-            res.json(data);
-        });        
+        hardware.clrDacValue(null,function(){
+            generateResponse(null, 'dac-delete', hardware.getDacValue(), function send(err, data){
+                res.json(data);
+            });        
+        });
     }) 
     
     .put(function(req,res){       
@@ -199,6 +200,16 @@ router.route('/gpio/motordriver')
         hardware.enableMotor(onErrorThrowIt);
         res.json(response);
     });    
+    
+router.route('/gpio/limitswitch')              
+    .get(function(req, res){
+        hardware.getLimitswitch(function getSpeedSender(err, result){
+            generateResponse(null, 'limitswitch-get', result, function send(err, data){
+                data.result = result;
+                res.json(data);
+            });                           
+        });
+    }); 
 
 
 router.route('/speed')
@@ -211,11 +222,21 @@ router.route('/speed')
         });
     })
     .delete(function (req, res) {
-    hardware.clrSpeed(null, function getSpeedSender(err, result) {
-        generateResponse(null, 'speed-delete',0, function send(err, data) {           
-            res.json(data);
+        hardware.clrSpeed(null, function getSpeedSender(err, result) {
+            generateResponse(null, 'speed-delete',0, function send(err, data) {           
+                res.json(data);
+            });
         });
-    });
+    })
+    .put(function (req, res) {
+        var request = eval(req.body);	    
+        setIntFromRequest(request.value, function(err, value){
+            hardware.setSpeed(err, value, function setSpeedSender(err2) {
+                generateResponse(err2, 'speed-put',value, function send(err, data) {           
+                    res.json(data);
+                });
+            });
+        }); 
     });
     
     
