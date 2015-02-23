@@ -5,9 +5,13 @@
  */
 var tools = require('./tools.js');
 
-var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":"16","SET":1,"CLR":0,"INIT":0,"DIRECTION":"output"},
-                     "MOTORDRIVER":{"PIN":"18","SET":1,"CLR":0,"INIT":0,"DIRECTION":"output"},
-                     "LIMITSWITCH":{"PIN":22,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"input"}};
+var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":16,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"output"},
+                     "MOTORDRIVER":{"PIN":18,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"output"},
+                     "STATUS_LIMIT":{"PIN":22,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"input"},
+                     "STATUS_5V_FIBER":{"PIN":11,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"input"},
+                     "STATUS_15V_NEGATIVE":{"PIN":13,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"input"},
+                     "STATUS_15V_POSITIVE":{"PIN":12,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"input"}
+                 };
     
 var internalSetLimitoverride = function(callback){
         console.log('LIMITOVERRIDE:\tSET');
@@ -37,52 +41,61 @@ var internalGetLimitswitch = function(callback){
         console.log('LIMITSWITCH:\tUNDEF-FALSE');
         callback(null, 0);
     };
+    
+var internalGetStatus = function(name, callback){
+        if (CONFIGURATION.hasOwnProperty(name)){
+            console.log(name + ':\tUNDEF-FALSE');
+            callback(null, -1);
+        }
+        else{
+            console.log('UNKNOWN IO:\tUNDEF-FALSE');
+            callback(null, -1);            
+        }
+    };
+
 
 // Check operating system and load SPI interface if linux is detected.
 if (tools.hardwareAvailable())
 {
     var gpio = require('pi-gpio');
-    function openGpio(io){
-        console.log("OPENING PIN:" + io.PIN);
-        gpio.open(io.PIN, io.DIRECTION,function(err){
-            if (err) {
-                console.log("RE-OPENING PIN:" + io.PIN);
-                gpio.close(io.PIN);
-                gpio.open(io.PIN, io.DIRECTION, function(err2){
-                    if (err2){
-                        throw err2;
+    function openGpio(name){
+        if (CONFIGURATION.hasOwnProperty(name)){
+            var io = CONFIGURATION[name];
+            console.log("OPENING IO: " + name);
+            if (io.hasOwnProperty("PIN") && io.hasOwnProperty("DIRECTION")){            
+                gpio.open(io.PIN, io.DIRECTION,function(err){
+                    if (err) {
+                        console.log("RE-OPENING PIN: " + io.PIN + " [" + name +"]");
+                        gpio.close(io.PIN);
+                        gpio.open(io.PIN, io.DIRECTION, function(err2){
+                            if (err2){
+                                throw err2;
+                            }
+                            else{
+                                console.log("GPIO OPENED: " + io.PIN + " [" + name +"]");
+                            }
+                        });
                     }
                     else{
-                        console.log("GPIO OPENED:" + io.PIN);
+                        console.log("GPIO OPENED: " + io.PIN + " [" + name +"]");
                     }
                 });
             }
-            else{
-                console.log("GPIO OPENED:" + io.PIN);
-            }
-        });
+        }
     }
-    openGpio(CONFIGURATION.LIMITOVERRIDE);
-    openGpio(CONFIGURATION.MOTORDRIVER);
-    openGpio(CONFIGURATION.LIMITSWITCH);
+    for (var io in CONFIGURATION){
+        openGpio(io);
+    }
+        
     
     function setGpio(pin,value, callback){
-        //gpio.close(pin);        
-        //gpio.open(pin, 'output', function(err) {  
-            //if (err) throw err;
-            gpio.write(pin, value, function() {         
-                callback(null,'OK');
-            });
-        //});          
+        gpio.write(pin, value, function() {         
+            callback(null,'OK');
+        });        
     }
     
     function getGpio(pin, callback){
-        //gpio.close(pin);        
-        //gpio.open(pin, 'input', function(err) {  
-            //if (err) throw err;
-            gpio.read(pin, callback);
-
-        //});          
+        gpio.read(pin, callback);        
     }        
     internalSetLimitoverride = function(callback)
     {
@@ -111,6 +124,16 @@ if (tools.hardwareAvailable())
     internalGetLimitswitch = function(callback){
         getGpio(CONFIGURATION.LIMITSWITCH.PIN, callback);       
     };    
+    
+    internalGetStatus = function(name, callback){
+        if (CONFIGURATION.hasOwnProperty(name)){
+            getGpio(CONFIGURATION[name].PIN, callback);
+        }
+        else{
+            console.log('UNKNOWN IO:\tUNDEF-FALSE');
+            callback(null, -1);            
+        }            
+    };
 }
 
 exports.clrLimitoverride = internalClrLimitoverride;
@@ -120,6 +143,7 @@ exports.enableDriver = internalSetMotordriver;
 exports.disableDriver = internalClrMotordriver;
 
 exports.getLimitswitch = internalGetLimitswitch;
+exports.getInputStatus = internalGetStatus;
 
 exports.onLimit = function onLimit(callback){        
         internalLimitSwitch(function(err, value){

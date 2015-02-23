@@ -203,13 +203,34 @@ router.route('/gpio/motordriver')
     
 router.route('/gpio/limitswitch')              
     .get(function(req, res){
-        hardware.getLimitswitch(function getSpeedSender(err, result){
+        hardware.getLimitswitch(function getLimitSwitchSender(err, result){
             generateResponse(null, 'limitswitch-get', result, function send(err, data){
                 data.result = result;
                 res.json(data);
             });                           
         });
     }); 
+
+router.route('/gpio/status/:io?')              
+    .get(function(req, res){
+        var routeId = 'gpio-status-get';
+        var request = req.params;
+        console.log(req.params.io);
+        if (request.hasOwnProperty("io")){
+            hardware.getInputStatus(request.io, function getStatusSender(err, result){
+                generateResponse(null, routeId, result, function send(err, data){
+                    data.result = result;
+                    res.json(data);
+                });                           
+            });
+        }
+        else{
+            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), routeId, {}, function send(err, data){
+                res.json(data);
+            });                       	
+        }        
+        
+    });
 
 
 router.route('/speed')

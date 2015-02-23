@@ -406,3 +406,4 @@ exports.setLimitoverride =  gpio.setLimitoverride;
 exports.clrLimitoverride =  gpio.clrLimitoverride;
 
 exports.getLimitswitch = gpio.getLimitswitch;
+exports.getInputStatus = gpio.getInputStatus;
