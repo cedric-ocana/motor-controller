@@ -79,7 +79,7 @@ if (tools.hardwareAvailable())
                     else{
                         console.log("GPIO OPENED: " + io.PIN + " [" + name +"]");
                     }
-                });
+                });                
             }
         }
     }

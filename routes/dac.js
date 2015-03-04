@@ -5,8 +5,18 @@
  */
 
 var tools = require('./tools.js');
+var redis = require('redis');
+var client = redis.createClient();
 
-var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2048}};
+// if you'd like to select database 3, instead of 0 (default), call
+// client.select(3, function() { /* ... */ });
+
+client.on("error", function (err) {
+    console.log("Redis client could not be started!\n" + err);
+});
+
+var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2068}};
+
 
 function assessDacRange(value, callback)
 {
@@ -55,7 +65,53 @@ if (tools.hardwareAvailable())
                             callback(null, value);
                         });
 	};
+        
+        console.log("DAC INITIALIZATION DONE");
+        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+        
 }
+
+client.set("dac-value", 2068);
+client.set("dac-run", 1);
+
+function setLowLevelDacLevel(err, value)
+{
+    if (err){
+        console.log("setLowLevelDacLevel: Check redis!");
+        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+        throw err;
+    } 
+    console.log("New value set" + value);
+    internalSetDac(value,function(){});
+}
+
+function dacController(err,value)
+{
+    if (err){
+        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+        throw err;
+    }         
+//    if (value === 1){        
+        client.get("dac-value", setLowLevelDacLevel);
+        setTimeout(function(){
+            client.get("dac-run", dacController);
+        },300);
+//    }
+//    else{
+//        setTimeout(function(){
+//            client.get("dac-run", dacController);
+//        },300);
+////        console.log("Wow DAC stop called!" + value === 1);
+////        console.log("Wow DAC stop called!" + value === 1);
+////        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+//    }       
+}
+
+dacController(null, 1);
+
+
+
+
 
 function intSetValueEmulator(err, newDacValue, callback){    
     if (err) throw err;    
@@ -70,12 +126,14 @@ function intSetValueEmulator(err, newDacValue, callback){
     }         
 }
 
+
 exports.setValueEmulator = intSetValueEmulator;
 
 function internalSetValue(err, newDacValue, callback){   
     if (err) throw err;  
     intSetValueEmulator(null, newDacValue, function(err, value){
-        internalSetDac(value, callback);
+        client.set("dac-value", value, callback);
+        
     });
 }
 
