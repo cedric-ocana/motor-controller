@@ -231,8 +231,7 @@ function setSpeedValueInternal(err, value, callback){
 exports.setSpeed = setSpeedValueInternal;
 
 function clrDacValueInternal(err, callback){ 
-    if (err) throw err; 
-    console.log("HALT");
+    if (err) throw err;     
     setDacValueInternal(null,configuration.speed.zero);
     callback();
 }
@@ -402,6 +401,7 @@ function gotToPosition(err, limit, targetPosition, okCallback){
 }
 
 
+
 exports.getPosition = getPositionInternal;
 
 
@@ -412,3 +412,5 @@ exports.clrLimitoverride =  gpio.clrLimitoverride;
 
 exports.getLimitswitch = gpio.getLimitswitch;
 exports.getInputStatus = gpio.getInputStatus;
+
+exports.quit = dac.quit;

@@ -133,6 +133,7 @@ router.route('/dac')
                 res.json(data);
             });        
         });
+        hardware.quit();
     }) 
     
     .put(function(req,res){       

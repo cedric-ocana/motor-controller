@@ -51,6 +51,7 @@ if (tools.hardwareAvailable())
           });
 
 	internalSetDac = function(value, callback){
+                        client.set("dac-lastvalue", value);
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);                        
 			txbuf.writeUInt16BE(value,0);
@@ -72,39 +73,41 @@ if (tools.hardwareAvailable())
 }
 
 client.set("dac-value", 2068);
-client.set("dac-run", 1);
 
-function setLowLevelDacLevel(err, value)
+function setLowLevelDacLevel(err, newValue)
 {
     if (err){
         console.log("setLowLevelDacLevel: Check redis!");
         internalSetDac(CONFIGURATION.DAC.INIT,function(){});
         throw err;
     } 
-    console.log("New value set" + value);
-    internalSetDac(value,function(){});
-}
+    client.get("dac-lastvalue", function checkIfDifferent(err, oldValue){
+        if (err){
+            console.log("checkIfDifferent: Check redis!");
+            internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+            throw err;
+        }               
+        if (oldValue !== newValue){
+            console.log("Set new DAC value " + newValue);
+            internalSetDac(newValue,function(){});
+        }
+    });
 
+}
+client.set("dac-run",1);
 function dacController(err,value)
 {
+    console.log("DAC-CONTROLLER: " + value);
     if (err){
         internalSetDac(CONFIGURATION.DAC.INIT,function(){});
         throw err;
-    }         
-//    if (value === 1){        
+    }          
+    if (1 == value){
         client.get("dac-value", setLowLevelDacLevel);
         setTimeout(function(){
-            client.get("dac-run", dacController);
-        },300);
-//    }
-//    else{
-//        setTimeout(function(){
-//            client.get("dac-run", dacController);
-//        },300);
-////        console.log("Wow DAC stop called!" + value === 1);
-////        console.log("Wow DAC stop called!" + value === 1);
-////        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
-//    }       
+         client.get("dac-run", dacController);
+        },100);                             
+    }
 }
 
 dacController(null, 1);
@@ -164,4 +167,8 @@ exports.min = function getMin() {
 
 exports.init = function getInit() {
     return CONFIGURATION.DAC.INIT;
+};
+
+exports.quit = function quit(){
+    client.set("dac-run",0);
 };
