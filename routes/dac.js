@@ -1,48 +1,64 @@
+
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 var tools = require('./tools.js');
 var redis = require('redis');
+var service = redis.createClient();
 var client = redis.createClient();
+
 
 // if you'd like to select database 3, instead of 0 (default), call
 // client.select(3, function() { /* ... */ });
 
 client.on("error", function (err) {
-    console.log("Redis client could not be started!\n" + err);
+    console.log("Redis DAC-Client error\n" + err);    
+});
+var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2068}};
+var SERVICE_NAME = "DAC-SERVICE";
+var CACHED_VALUE = "dac-lastvalue";
+var SERVICE_NAME_DAC_VALUE = "dac-value";
+var SPI_DEVICE = '/dev/spidev0.0';
+
+service.on("error", function(err){
+    console.log("Redis DAC-Service error\n" + err);    
 });
 
-var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2068}};
-
-
-function assessDacRange(value, callback)
-{
-	if(value > CONFIGURATION.DAC.RANGE.MAX)
-		{
-		value = CONFIGURATION.DAC.RANGE.MAX;
-	}
-	if(value < CONFIGURATION.DAC.RANGE.MIN)
-	{
-		value = CONFIGURATION.DAC.RANGE.MIN;
-	}        
-	callback(null, value);
+function assessDacRange(err, value, callback){
+    if(err) throw err;
+    if (isNaN(value))
+    {				           
+        throw new Error('Given parameter is not a number: '+ value);
+    }
+    else{
+        if(value > CONFIGURATION.DAC.RANGE.MAX)
+                {
+                value = CONFIGURATION.DAC.RANGE.MAX;
+        }
+        if(value < CONFIGURATION.DAC.RANGE.MIN)
+        {
+                value = CONFIGURATION.DAC.RANGE.MIN;
+        }        
+    }
+    callback(null, value,function(){});    
 }
 
-var internalSetDac = function(value, callback){
-        console.log("[Windows]\tDAC:\t" + value);
+var internalSetDac = function(err, value, callback){
+        if (err) throw err;
+        client.set(CACHED_VALUE, value);
+        console.log("Emulator\tDAC:\t" + value);
         callback(null, value);
     };
 
 // Check operating system and load SPI interface if pi is detected.
-
 if (tools.hardwareAvailable())
 {
 	// HW - interaction initial definition
 	var SPI = require('spi');
-	var spi = new SPI.Spi('/dev/spidev0.0', {
+	var spi = new SPI.Spi(SPI_DEVICE, {
 		'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
 		'chipSelect': SPI.CS['low'] // 'none', 'high' - defaults to low
 	  }, function(s){
@@ -50,8 +66,8 @@ if (tools.hardwareAvailable())
               s.open();
           });
 
-	internalSetDac = function(value, callback){
-                        client.set("dac-lastvalue", value);
+	internalSetDac = function(err, value, callback){
+                        client.set(CACHED_VALUE, value);
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);                        
 			txbuf.writeUInt16BE(value,0);
@@ -65,56 +81,46 @@ if (tools.hardwareAvailable())
 			spi.transfer(txbuf, rxbuf, function(){
                             callback(null, value);
                         });
-	};
-        
-        console.log("DAC INITIALIZATION DONE");
-        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
-        
-}
+	};        
+        //* This is just to try to ensure that the DAC is initialized. 
+        //  But I know it will not be executed in all cases in the correct order.
+        internalSetDac(CONFIGURATION.DAC.INIT,function(){}); 
+}  
 
-client.set("dac-value", 2068);
-
-function setLowLevelDacLevel(err, newValue)
-{
+function setLowLevelDacLevel(err, newValue){
     if (err){
-        console.log("setLowLevelDacLevel: Check redis!");
         internalSetDac(CONFIGURATION.DAC.INIT,function(){});
         throw err;
-    } 
-    client.get("dac-lastvalue", function checkIfDifferent(err, oldValue){
+    }         
+    client.get(CACHED_VALUE, function checkIfDifferent(err, oldValue){   
         if (err){
-            console.log("checkIfDifferent: Check redis!");
-            internalSetDac(CONFIGURATION.DAC.INIT,function(){});
-            throw err;
-        }               
-        if (oldValue !== newValue){
-            console.log("Set new DAC value " + newValue);
-            internalSetDac(newValue,function(){});
+            assessDacRange(null, newValue, internalSetDac);
+        }
+        if (oldValue != newValue){            
+            assessDacRange(null, newValue, internalSetDac);
         }
     });
-
 }
-client.set("dac-run",1);
-function dacController(err,value)
-{
-    console.log("DAC-CONTROLLER: " + value);
-    if (err){
-        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
-        throw err;
-    }          
-    if (1 == value){
-        client.get("dac-value", setLowLevelDacLevel);
-        setTimeout(function(){
-         client.get("dac-run", dacController);
-        },100);                             
+
+
+service.on("subscribe", function(channel, count){
+	console.log(SERVICE_NAME + " subscribed for channel: " + channel);
+});
+
+service.on("message", function(channel, message){    
+    if (channel === SERVICE_NAME_DAC_VALUE){
+        tools.getInteger(message,setLowLevelDacLevel);		
     }
-}
+});
 
-dacController(null, 1);
+service.on("unsubscribe", function(channel, count){
+        console.log(SERVICE_NAME + " unsubscribed for channel: " + channel);
+	if (channel === SERVICE_NAME_DAC_VALUE){
+            internalSetDac(CONFIGURATION.DAC.INIT,function(){});		
+	}
+});
 
-
-
-
+service.subscribe(SERVICE_NAME_DAC_VALUE);
 
 function intSetValueEmulator(err, newDacValue, callback){    
     if (err) throw err;    
@@ -124,20 +130,19 @@ function intSetValueEmulator(err, newDacValue, callback){
         throw new Error('Given parameter is not a number: '+ newDacValue);
     }
     else
-    {        
-        assessDacRange(dacValue, callback);      
+    {        	        
+        assessDacRange(null, dacValue, internalSetValue);      
     }         
 }
 
-
 exports.setValueEmulator = intSetValueEmulator;
 
-function internalSetValue(err, newDacValue, callback){   
-    if (err) throw err;  
-    intSetValueEmulator(null, newDacValue, function(err, value){
-        client.set("dac-value", value, callback);
-        
-    });
+function internalSetValue(err, newDacValue){   
+    if (err) throw err;         
+    tools.getInteger(newDacValue,function(err,value){        
+        console.log("New value" + newDacValue);
+        client.publish(SERVICE_NAME_DAC_VALUE,newDacValue,function(){});
+    });	
 }
 
 exports.setValue = internalSetValue;
@@ -147,8 +152,6 @@ function resetEmulator(err) {
     if (err) throw err;
 };
 
-
-
 function reset(err) {
     return internalSetDac(CONFIGURATION.DAC.INIT,function(){});
     if (err) throw err;    
@@ -156,6 +159,19 @@ function reset(err) {
 
 exports.resetEmulator = resetEmulator;
 exports.reset = reset;
+
+exports.open = function open(callback){    
+    internalSetDac(CONFIGURATION.DAC.INIT,callback);
+    service.subscribe(SERVICE_NAME_DAC_VALUE);
+};
+
+exports.close = function close(){
+    service.unsubscribe(SERVICE_NAME_DAC_VALUE);    
+};
+
+exports.getDacValue = function internalGetDacValue(err, callback){
+    client.get(CACHED_VALUE, callback);
+};
 
 exports.max = function getMax(){
     return CONFIGURATION.DAC.RANGE.MAX;
@@ -167,8 +183,4 @@ exports.min = function getMin() {
 
 exports.init = function getInit() {
     return CONFIGURATION.DAC.INIT;
-};
-
-exports.quit = function quit(){
-    client.set("dac-run",0);
 };

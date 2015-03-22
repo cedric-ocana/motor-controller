@@ -50,7 +50,6 @@ function setIntFromRequest(field, callback){
         }
         else
         {            
-            console.log("OK value OK.");
             callback(null, newValue);
         }   
     }

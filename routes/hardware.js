@@ -179,10 +179,8 @@ exports.setAdcValue = function setAdcValue(err, value){
     configuration.adc.value = value;
 };
 
-exports.getDacValue = function getDacValue(err){
-    if (err) throw err; 
-    return configuration.dac.value;
-};
+exports.getDacValue = dac.getDacValue;
+
 
 function changeSpeed(vTarget, callback){
 //    var vDelta = vTarget > configuration.dac.value ? vTarget - configuration.dac.value : configuration.dac.value - vTarget;    
@@ -236,20 +234,10 @@ function clrDacValueInternal(err, callback){
     callback();
 }
 exports.clrDacValue = clrDacValueInternal;
-function setDacCach(err, value){
-    if (err) throw err;
-//    console.log("Set new speed: " + value + " done");
-    configuration.dac.value = value;
-}
+
 function setDacValueInternal(err, newDacValue){   
     if (err) throw err;        
-    if (emulatorActive()){        
-        dac.setValueEmulator(err, newDacValue, setDacCach);
-        console.log("DAC:" + configuration.dac.value);
-    }
-    else{
-        dac.setValue(err, newDacValue, setDacCach);
-    }
+    dac.setValue(err, newDacValue, function(){});
 }
 
 exports.setDacValue = setDacValueInternal;
