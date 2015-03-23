@@ -15,6 +15,17 @@ var gpio = require('./gpio.js');
 var adc = require('./adc.js');
 var tools = require('./tools.js');
 var redis = require('redis');
+var redis = require('redis');
+var service = redis.createClient();
+var client = redis.createClient();
+
+client.on("error", function (err) {
+    console.log("Redis DAC-Client error\n" + err);    
+});
+
+
+
+
 
 var mode = "emulator";
 if (tools.hardwareAvailable())
@@ -34,7 +45,7 @@ var configuration = {"mode":mode,
                     "adc":{
                         "value":21000,
                        /* Basic formula is:
-                        * h = n * ((r1 +r2) * 2 * pi * npot/nmax) + offset
+                        * h = n * ((r1 + r2) * 2 * pi * npot/nmax) + offset
                         * h = n * multiplicator + offset
                         * where:
                         * h     := height of the antenna holding tray
@@ -47,7 +58,10 @@ var configuration = {"mode":mode,
                         * offset:= The offset between measured and calculated values                
                         */
                         "multiplicator":0.0052729034423828125,
-                        "offset": 198.4
+                        "loffset": -142.76908355,
+                        "lmax":500,
+                        "lfixation":32,
+                        "lweel":49
                     },
                     "position":{
                         "actual":0,
@@ -59,15 +73,15 @@ var configuration = {"mode":mode,
                         "up": {
                             "fast": {
                                 "distance": 50,
-                                "speed": getSpeed(-1.00)
+                                "speed": 0
                             },
                             "normal": {
-                                "distance": 15,
-                                "speed": getSpeed(-0.75)
+                                "distance": 5,
+                                "speed": 1100
                             },
                             "slow": {
-                                "distance": 5,
-                                "speed": getSpeed(-0.15)
+                                "distance": 1,
+                                "speed": 1500
                             }
                         },
                         "down": {
@@ -76,12 +90,12 @@ var configuration = {"mode":mode,
                                 "speed": getSpeed(1.00)
                             },
                             "normal": {
-                                "distance": 15,
-                                "speed": getSpeed(0.75)
+                                "distance": 5,
+                                "speed": 2800
                             },
                             "slow": {
-                                "distance": 5,
-                                "speed": getSpeed(0.15)
+                                "distance": 1,
+                                "speed": 2300
                             }
                         },                                               
                         "tsampling":100,
@@ -279,32 +293,6 @@ function internalGetSpeed(err, callback){
 }
 exports.getSpeed = internalGetSpeed;
 
-//function inPosition(position, tCall, okCallback, aboveCallback, belowCallback){
-//    var limit = {};    
-//    limit.max = position + configuration.position.tolerance;
-//    limit.min = position - configuration.position.tolerance;    
-//    getPositionInternal(null, function moveUpOrDown(err, data){
-//        var dt = tCall - process.hrtime();
-//        configuration.position.actual = data.position;            
-//        console.log("In-Pos-Target: " + ((position * 10)|0) + "mm, Current: " + ((data.position * 10)|0) + "mm, dt:" + (dt|0) + "ns, speed:" + (data.speed|0) + "#");    
-//        
-//        if ( data.position > limit.max){
-//            aboveCallback(null, position, data, dt );
-//            inPosition(position, process.hrtime(), okCallback, aboveCallback, belowCallback)
-//        }
-//        else{
-//            if (data.position < limit.min){                
-//                belowCallback(null, position, data, dt );                      
-//                inPosition(position, process.hrtime(), okCallback, aboveCallback, belowCallback)
-//            }
-//            else{  
-//                clrDacValueInternal(null, function () { });
-//                okCallback(null, data.position);
-//            }     
-//        }                
-//    });
-//}
-
 function move(err, distance, settings, callback){
     //changeSpeed(settings.slow.speed, callback);
     if (distance <= settings.slow.distance) {
@@ -330,22 +318,27 @@ function moveUp(err, distance, callback){
 function moveDown(err, distance, callback){
     move(err, distance, configuration.speed.down, callback);
 }
+var CACHED_TARGET_POSITION = "target-position";
+var CACHED_POSITIONLOOP_ACTIVE = "position-loop";
+var SERVICE_NAME = "HARDWARE-SERVICE";
+var CHANNEL_POSITION_HANDLER = "position-handler";
 
 exports.setPosition = function setPosition(err, position, callback){  
-    var intermediateTime = process.hrtime();
-    var intermediateTime1 = process.hrtime();
-    var dt = configuration.speed.defaultdt;
-    var avg = dt;        
-    var limit = {};       
-    limit.max = position + configuration.position.tolerance;
-    limit.min = position - configuration.position.tolerance;
+//    var intermediateTime = process.hrtime();
+//    var intermediateTime1 = process.hrtime();
+//    var dt = configuration.speed.defaultdt;
+//    var avg = dt;        
+//    var limit = {};       
+//    limit.max = position + configuration.position.tolerance;
+//    limit.min = position - configuration.position.tolerance;
     console.log("Move to: " + ((position * 10)|0) + "mm");    
-    gotToPosition(null, limit,  position,callback);
+    client.publish(CHANNEL_POSITION_HANDLER,position,function(){});
+    //gotToPosition(null, limit,  position,callback);
 };
 
 function getPositionFromAdcValue(adcValue){     
-    with (configuration.adc){
-        return (adc.max - adcValue) * multiplicator + offset;
+    with (configuration.adc){        
+        return lmax - adcValue * multiplicator + loffset;
     }
 }
 
@@ -358,6 +351,80 @@ function getPositionInternal(err, callback){
     });
 }
 
+
+
+service.on("subscribe", function(channel, count){
+    console.log(SERVICE_NAME + " subscribed for channel: " + channel);
+    client.set(CACHED_TARGET_POSITION,configuration.position.default);
+    client.set(CACHED_POSITIONLOOP_ACTIVE,"1");
+    positionLoop(null, "1");
+});
+
+service.on("message", function(channel, message){        
+    if (channel === CHANNEL_POSITION_HANDLER){
+        console.log("Wow a msg:" + message + "from channel:"+ channel);
+        client.set(CACHED_TARGET_POSITION,message, function(err, value){
+            positionLoop(null, "1");
+        });
+        
+    }
+});
+
+service.on("unsubscribe", function(channel, count){
+        console.log(SERVICE_NAME + " unsubscribed for channel: " + channel);
+	if (channel === CHANNEL_POSITION_HANDLER){
+            client.set(CACHED_POSITIONLOOP_ACTIVE,"0");	
+	}
+});
+
+service.subscribe(CHANNEL_POSITION_HANDLER);
+
+function positionLoop(err, value){
+    if (err) throw err;
+    if (value == "1"){        
+        client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
+            tools.getInteger(tempTargetPosition, function(err, targetPosition){
+                getPositionInternal(err, function(err, data){
+                    if (err) throw err;                    
+                    with (data){
+                        //console.log("Position loop active" + targetPosition + "Current Position:" + position);
+                        var distance = Math.abs(targetPosition-position);
+                        var limit = {};       
+                        limit.max = targetPosition + configuration.position.tolerance;
+                        limit.min = targetPosition - configuration.position.tolerance;
+                        if(position > limit.max){
+                            console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
+                            moveDown(null, distance, function(err){
+                                client.get(CACHED_POSITIONLOOP_ACTIVE,positionLoop);
+                            });                        
+                        }
+                        else{
+                            if (position < limit.min){
+                                console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
+                                moveUp(null, distance, function(err){
+                                    client.get(CACHED_POSITIONLOOP_ACTIVE,positionLoop);
+                                });                             
+                            }
+                            else{
+                                clrDacValueInternal(null,function() {
+                                    console.log("Target position reached.");
+                                }); 
+                            }
+                        }  
+                    }
+                });
+            });
+        }); 
+    }    
+    else{
+        console.log("Position loop stopped");
+        clrDacValueInternal(null,function() {            
+        });        
+    }
+}
+
+
+
 function gotToPosition(err, limit, targetPosition, okCallback){
     getPositionInternal(err, function(err, data){
         if (err) throw err;                 
@@ -366,14 +433,14 @@ function gotToPosition(err, limit, targetPosition, okCallback){
             var timeout = distance * 0.75/Math.abs(du) * dt;  
             timeout = 10;            
             if(position > limit.max){
-                console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, dt:"+ (dt|0) + "ns, distance:" + (distance) + "bit, timeout:" + timeout);            
+                console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit, timeout:" + timeout);            
                 moveDown(null, distance, function(err){
                         gotToPosition(err, limit, targetPosition, okCallback);
                     });
             }                                                        
             else{  
                 if (position < limit.min){                
-                    console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, dt:"+ (dt|0) + "ns, distance:" + (distance) + "bit, timeout:" + timeout);            
+                    console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit, timeout:" + timeout);            
                     moveUp(null, distance, function(err){
                         gotToPosition(err, limit, targetPosition, okCallback);
                     });                                      
@@ -388,6 +455,16 @@ function gotToPosition(err, limit, targetPosition, okCallback){
         });   
 }
 
+
+
+exports.setMeasured = function setPosition(err, measuredPosition, callback){     
+    getPositionInternal(err,function(err, currentPosition){
+        var potiPosition = currentPosition.position - configuration.adc.loffset;
+        configuration.adc.loffset = measuredPosition - potiPosition;
+        console.log("New Offset:" + configuration.adc.loffset);
+        callback(null, configuration.adc.loffset );
+    });
+};
 
 
 exports.getPosition = getPositionInternal;

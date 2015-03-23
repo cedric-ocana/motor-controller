@@ -66,7 +66,7 @@ if (tools.hardwareAvailable())
               s.open();
           });
 
-	internalSetDac = function(err, value, callback){
+	internalSetDac = function(err, value, callback){                        
                         client.set(CACHED_VALUE, value);
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);                        
@@ -84,12 +84,12 @@ if (tools.hardwareAvailable())
 	};        
         //* This is just to try to ensure that the DAC is initialized. 
         //  But I know it will not be executed in all cases in the correct order.
-        internalSetDac(CONFIGURATION.DAC.INIT,function(){}); 
+        internalSetDac(null, CONFIGURATION.DAC.INIT,function(){}); 
 }  
 
 function setLowLevelDacLevel(err, newValue){
     if (err){
-        internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+        internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});
         throw err;
     }         
     client.get(CACHED_VALUE, function checkIfDifferent(err, oldValue){   
@@ -116,7 +116,7 @@ service.on("message", function(channel, message){
 service.on("unsubscribe", function(channel, count){
         console.log(SERVICE_NAME + " unsubscribed for channel: " + channel);
 	if (channel === SERVICE_NAME_DAC_VALUE){
-            internalSetDac(CONFIGURATION.DAC.INIT,function(){});		
+            internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
 	}
 });
 
@@ -139,8 +139,7 @@ exports.setValueEmulator = intSetValueEmulator;
 
 function internalSetValue(err, newDacValue){   
     if (err) throw err;         
-    tools.getInteger(newDacValue,function(err,value){        
-        console.log("New value" + newDacValue);
+    tools.getInteger(newDacValue,function(err,value){            
         client.publish(SERVICE_NAME_DAC_VALUE,newDacValue,function(){});
     });	
 }
@@ -153,7 +152,7 @@ function resetEmulator(err) {
 };
 
 function reset(err) {
-    return internalSetDac(CONFIGURATION.DAC.INIT,function(){});
+    return internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});
     if (err) throw err;    
 };
 
@@ -161,7 +160,7 @@ exports.resetEmulator = resetEmulator;
 exports.reset = reset;
 
 exports.open = function open(callback){    
-    internalSetDac(CONFIGURATION.DAC.INIT,callback);
+    internalSetDac(null, CONFIGURATION.DAC.INIT,callback);
     service.subscribe(SERVICE_NAME_DAC_VALUE);
 };
 

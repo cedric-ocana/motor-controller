@@ -21,7 +21,7 @@ exports.hardwareAvailable = function hardwareAvailable() {
 
 exports.getInteger = function getInteger(field, callback){        
 	if (field !== undefined){
-		var newValue = parseInt(field);
+		var newValue = parseInt(field,10);
 		if (isNaN(newValue)){
 			callback(new RangeError("Parameter must be a number."), null);
 		}

@@ -286,5 +286,21 @@ router.route('/position')
         });
     });    
     
+router.route('/position/measured')
+    .put(function(req, res){
+        var request = eval(req.body);
+        if (request.value !== undefined){
+            hardware.setMeasured(null, request.value, function setMeasuredSender(err, result){
+                generateResponse(null, 'position-measured-set', result, function send(err, data){
+                    res.json(data);
+                });                           
+            });
+        }
+        else{
+            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), 'mode-put', hardware.getMode(), function send(err, data){
+                res.json(data);
+            });                       	
+        }
+    });     
 module.exports = router;
 
