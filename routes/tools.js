@@ -5,6 +5,11 @@
  */
 var os = require('os');
 
+exports.CHANNEL_EMERGENCY = "emergency";
+exports.MSG_EMERGENCY_STOP = "emergency-stop";
+exports.MSG_EMERGENCY_RELEASE = "emergency-release";
+exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";
+
 exports.hardwareAvailable = function hardwareAvailable() {
     if (os.hostname() === 'mk-mast1')
     {

@@ -259,11 +259,36 @@ router.route('/speed')
             });
         }); 
     });
-    
+
+
+router.route('/emergency')
+    .put(function(req, res){
+        hardware.setEmergency();
+        generateResponse(null, 'emergency-put', 0, function send(err, data){
+                data.result = "OK";
+                res.json(data);
+        });                                   
+    })
+    .delete(function (req, res) {
+        hardware.clrEmergency();
+        generateResponse(null, 'emergency-delete', 0, function send(err, data){
+                data.result = "OK";
+                res.json(data);
+        });
+    })
+    .get(function(req, res){     
+        hardware.isEmergencyOngoing(null, function getPositionSender(err, result){
+            generateResponse(err, 'emergency-get', result, function send(err, data){
+                data.data = result;
+                res.json(data);
+            });                           
+        });
+    });
     
 router.route('/position')
     .put(function(req, res){
         var request = eval(req.body);
+	console.log("Position Request:" + request.toString());
         if (request.value !== undefined){
             hardware.setPosition(null, request.value, function setPositionSender(err, result){
                 generateResponse(null, 'position-set', result, function send(err, data){
@@ -285,7 +310,7 @@ router.route('/position')
             });                           
         });
     });    
-    
+        
 router.route('/position/measured')
     .put(function(req, res){
         var request = eval(req.body);

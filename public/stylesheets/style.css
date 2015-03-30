@@ -8,11 +8,15 @@ a {
 }
 
 input {
-  padding: 0 0px 0 0px;
-  margin-left: 2px;
-  
+    padding: 0 0px 0 0px;
+    margin-left: 2px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;   
 }
+
 label { display: inline; width: 250px; }
+
 
 div.status{
 	width:12px;
@@ -93,14 +97,22 @@ div.statuserr{
 
 #speed
 {
-	width:155px;
+	width:150px;
 	margin-top: 2px;
 	-webkit-border-radius: 8px;
 	-moz-border-radius: 8px;
 	border-radius: 8px;
 	text-align:center;
 }
-
+#position
+{
+	width:100%;
+	margin-top: 2px;
+	-webkit-border-radius: 8px;
+	-moz-border-radius: 8px;
+	border-radius: 8px;
+	text-align:center;
+}
 #progressbar
 {
 	width:100px;
@@ -114,11 +126,170 @@ div.statuserr{
 }
 #indicator
 {
-	width:50px;
+	width:20px;
 	background-color:blue;
 	height:12px;
 	margin:0;
-	-webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
+
+}
+#positionIdicator
+{
+    height: 270px;
+    width:300px;
+    background-color:beige;
+    border:4px solid green;
+    -webkit-border-radius: 15px;
+    -moz-border-radius: 15px;
+    border-radius: 15px;    
+}
+
+div.smallAntennadiv {
+	width:2px;	
+	background-color:orange;
+	margin:5px;	
+	margin-top: 3px;
+	margin-bottom: 3px;
+	border:1px solid black;
+	-webkit-border-radius: 1px;
+	-moz-border-radius: 1px;
+	border-radius: 1px;	
+	float:right;	
+}
+div.bigAntennadiv {
+	width:2px;	
+	background-color:orange;
+	margin:5px;	
+	margin-top: 10px;
+	margin-bottom: 10px;
+	border:1px solid black;
+	-webkit-border-radius: 1px;
+	-moz-border-radius: 1px;
+	border-radius: 1px;	
+	float:right;	
+}
+div.antennatray {
+	width:10px;	
+	background-color:brown;
+	margin:-19px;
+	margin-top: 100px;
+	height:64px;
+	border:1px solid black;
+	-webkit-border-radius: 1px;
+	-moz-border-radius: 1px;
+	border-radius: 1px;	
+	float:right;
+}
+div.smallAntenna {
+	width:2px;	
+	background-color:orange;
+	margin:14px;
+	margin-top: 14px;
+	height:35px;
+	border:1px solid black;
+	-webkit-border-radius: 1px;
+	-moz-border-radius: 1px;
+	border-radius: 1px;	
+	float:right;	
+	
+}
+
+div.antennafixation{
+    width:40px;	
+    background-color:orange;
+    margin:1px;
+    margin-top: 131px;
+    margin-left: -45px;
+    height:1px;
+    border:1px solid black;
+    -webkit-border-radius: 1px;
+    -moz-border-radius: 1px;
+    border-radius: 1px;	
+    float:right;    
+}
+
+div.bigAntenna {
+    width:2px;	
+    background-color:orange;
+    margin:14px;
+    margin-top: -13px;
+    height:87px;
+    border:1px solid black;
+    -webkit-border-radius: 1px;
+    -moz-border-radius: 1px;
+    border-radius: 1px;	
+    float:right;	
+}
+
+div.switchAntenna{
+    width:160px;	
+    margin-top: 10px;
+    margin-left: 10px;
+    height:35px;    
+    -webkit-border-radius: 9px;
+    -moz-border-radius: 9px;
+    border-radius: 9px;	
+    float:left;   
+}
+#mastbar
+{
+    width:3px;
+    padding:1px;
+    margin-top: 7px;
+    margin: 10px;
+    background-color:gray;
+    border:1px solid black;
+    height:243px;	
+    -webkit-border-radius: 15px;
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+    float:right;
+}
+
+#currentPositionText
+{
+	width:60px;
+	padding:0px;
+	
+	margin:55px;
+	margin-top: -8px;
+	border:1px solid black;
+	
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	float:right;	
+}
+#antennaSwitch
+{
+    width:100%;	
+    height: 30px;
+    border:1px solid black;
+    background-color: dodgerblue;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;  
+}
+
+#emergencyRelease
+{
+	width:100%;	
+	margin-top: 10px;
+	height: 45px;
+	border:1px solid black;
+	background-color: buttonface;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;	
+}
+
+#emergencyStop
+{
+	width:100%;
+	margin-top: 10px;
+	height: 100px;
+	border:1px solid black;
+	background-color: orangered;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;	
 }

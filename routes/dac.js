@@ -20,7 +20,7 @@ client.on("error", function (err) {
 var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2068}};
 var SERVICE_NAME = "DAC-SERVICE";
 var CACHED_VALUE = "dac-lastvalue";
-var SERVICE_NAME_DAC_VALUE = "dac-value";
+var CHANNEL_DAC_VALUE = "dac-value";
 var SPI_DEVICE = '/dev/spidev0.0';
 
 service.on("error", function(err){
@@ -104,23 +104,38 @@ function setLowLevelDacLevel(err, newValue){
 
 
 service.on("subscribe", function(channel, count){
-	console.log(SERVICE_NAME + " subscribed for channel: " + channel);
+    console.log(SERVICE_NAME + " subscribed for channel: " + channel);
+    if (channel === CHANNEL_DAC_VALUE){
+	internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
+    }	
 });
 
 service.on("message", function(channel, message){    
-    if (channel === SERVICE_NAME_DAC_VALUE){
+    if (channel === CHANNEL_DAC_VALUE){
         tools.getInteger(message,setLowLevelDacLevel);		
     }
+    if (channel === tools.CHANNEL_EMERGENCY){
+	if (message === tools.MSG_EMERGENCY_STOP){
+	    service.unsubscribe(CHANNEL_DAC_VALUE);
+	    internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
+	}
+	console.log("Message:" + message);
+	if (message === tools.MSG_EMERGENCY_RELEASE){
+	    internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
+	    service.subscribe(CHANNEL_DAC_VALUE);
+	}	
+    }    
 });
 
 service.on("unsubscribe", function(channel, count){
-        console.log(SERVICE_NAME + " unsubscribed for channel: " + channel);
-	if (channel === SERVICE_NAME_DAC_VALUE){
-            internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
-	}
+    console.log(SERVICE_NAME + " unsubscribed from channel: " + channel);
+    if (channel === CHANNEL_DAC_VALUE){
+	internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
+    }
 });
 
-service.subscribe(SERVICE_NAME_DAC_VALUE);
+service.subscribe(CHANNEL_DAC_VALUE);
+service.subscribe(tools.CHANNEL_EMERGENCY);
 
 function intSetValueEmulator(err, newDacValue, callback){    
     if (err) throw err;    
@@ -140,7 +155,7 @@ exports.setValueEmulator = intSetValueEmulator;
 function internalSetValue(err, newDacValue){   
     if (err) throw err;         
     tools.getInteger(newDacValue,function(err,value){            
-        client.publish(SERVICE_NAME_DAC_VALUE,newDacValue,function(){});
+        client.publish(CHANNEL_DAC_VALUE,newDacValue,function(){});
     });	
 }
 
@@ -161,11 +176,11 @@ exports.reset = reset;
 
 exports.open = function open(callback){    
     internalSetDac(null, CONFIGURATION.DAC.INIT,callback);
-    service.subscribe(SERVICE_NAME_DAC_VALUE);
+    service.subscribe(CHANNEL_DAC_VALUE);
 };
 
 exports.close = function close(){
-    service.unsubscribe(SERVICE_NAME_DAC_VALUE);    
+    service.unsubscribe(CHANNEL_DAC_VALUE);    
 };
 
 exports.getDacValue = function internalGetDacValue(err, callback){

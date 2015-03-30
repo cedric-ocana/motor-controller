@@ -2,17 +2,30 @@ extends layout
 
 block content
 	script(src='/javascripts/jquery-2.1.1.js')
-	script(src='/javascripts/motor-controllers.js')
-	h1= title
-	p Welcome to #{title}
+	script(src='/javascripts/motor-controller.js')
+	h1= title	
 	h2
-		|Manual controller
+		|Speed control
 	p
 		div(id="manualController")
 			div(id="manualControllerPad",  onmousedown="setupControl()", onmouseup="unlinkControl()", class="manualControllerPad")
 			div(id="speedbar")
 				div(id="speedindicator")
-			input(id="speed")
+			input(id="speed",  disabled)
 	h2
-		|Info
-	p(id="info")
+		|Position control [cm]
+		div(id="positionIdicator")
+			div(class="switchAntenna")
+				input(id='antennaSwitch', type='button', value='switch to small antenna', onclick='switchAntenna();')
+				input(placeholder='0', id='position', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setPosition(this.id)}" )
+				input(id="emergencyStop", type='button', value="EMERGENCY STOP" ,onclick = "emergencyStop();" )
+				input(id="emergencyRelease", type='button', value="RELEASE EMERGENCY" ,onclick = "emergencyRelease();" )
+			div(id="fixation", class="antennafixation")
+				input(id='currentPositionText' )
+			div(id="mastbar")
+			div(id="tray", class="antennatray")
+				div(id="antenna", class="bigAntenna")
+					div(id="pole1", class="bigAntennadiv")
+						div(id="pole2", class="bigAntennadiv")
+							div(id="pole3", class="bigAntennadiv")
+								div(id="pole4", class="bigAntennadiv")
