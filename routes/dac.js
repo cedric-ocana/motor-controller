@@ -112,7 +112,7 @@ service.on("subscribe", function(channel, count){
 
 service.on("message", function(channel, message){    
     if (channel === CHANNEL_DAC_VALUE){
-        tools.getInteger(message,setDacLevel);		
+        tools.getFloat(message,setDacLevel);		
     }
     if (channel === tools.CHANNEL_EMERGENCY){
 	if (message === tools.MSG_EMERGENCY_STOP){
@@ -139,7 +139,7 @@ service.subscribe(tools.CHANNEL_EMERGENCY);
 
 function intSetValueEmulator(err, newDacValue, callback){    
     if (err) throw err;    
-    var dacValue = parseInt(newDacValue);	
+    var dacValue = parseFloat(newDacValue);	
     if (isNaN(dacValue))
     {				           
         throw new Error('Given parameter is not a number: '+ newDacValue);
@@ -154,7 +154,7 @@ exports.setValueEmulator = intSetValueEmulator;
 
 function internalSetValue(err, newDacValue){   
     if (err) throw err;         
-    tools.getInteger(newDacValue,function(err,value){            
+    tools.getFloat(newDacValue,function(err,value){            
         client.publish(CHANNEL_DAC_VALUE,newDacValue,function(){});
     });	
 }

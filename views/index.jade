@@ -15,11 +15,21 @@ block content
 	h2
 		|Position control [cm]
 		div(id="positionIdicator")
-			div(class="switchAntenna")
-				input(id='antennaSwitch', type='button', value='switch to small antenna', onclick='switchAntenna();')
-				input(placeholder='0', id='position', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setPosition(this.id)}" )
-				input(id="emergencyStop", type='button', value="EMERGENCY STOP" ,onclick = "emergencyStop();" )
-				input(id="emergencyRelease", type='button', value="RELEASE EMERGENCY" ,onclick = "emergencyRelease();" )
+			div(class="positionblock")
+				div( class="positionline")
+					input(id='antennaSwitch', type='button', value='switch to small antenna', onclick='switchAntenna();')
+				div( class="positionline")
+					div(class="label")
+						|New height in cm:
+					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setPosition(this.id)}" )
+				div(class="positionline")
+					input(id="emergencyStop", type='button', value="EMERGENCY STOP" ,onclick = "emergencyStop();" )
+				div( class="positionline")
+					input(id="emergencyRelease", type='button', value="RELEASE EMERGENCY" ,onclick = "emergencyRelease();" )
+				div( class="positionline")
+					div(class="label")
+						|Measured height:
+					input(class='inputbox', placeholder='0', id='currentPosition' ,onkeyup = "{if(event.keyCode==13)setCurrentPosition(this.id)}" )
 			div(id="fixation", class="antennafixation")
 				input(id='currentPositionText' )
 			div(id="mastbar")

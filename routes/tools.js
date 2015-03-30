@@ -24,9 +24,9 @@ exports.hardwareAvailable = function hardwareAvailable() {
 };
 
 
-exports.getInteger = function getInteger(field, callback){        
+exports.getFloat = function getFloat(field, callback){        
 	if (field !== undefined){
-		var newValue = parseInt(field,10);
+		var newValue = parseFloat(field,10);
 		if (isNaN(newValue)){
 			callback(new RangeError("Parameter must be a number."), null);
 		}

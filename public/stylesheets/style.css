@@ -1,6 +1,6 @@
 body {
   padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 12px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
 a {
@@ -9,18 +9,19 @@ a {
 
 input {
     padding: 0 0px 0 0px;
-    margin-left: 2px;
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
     border-radius: 4px;   
 }
 
-label { display: inline; width: 250px; }
-
+label {
+    display: inline;
+    padding: 2px;
+    font: 10px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
 
 div.status{
 	width:12px;
-	padding:1px;
 	background-color:gray;
 	border:1px solid black;
 	height:12px;
@@ -28,6 +29,7 @@ div.status{
 	-moz-border-radius: 4px;
 	border-radius: 4px;
 }
+
 div.statusok{
 	width:12px;
 	padding:1px;
@@ -104,15 +106,30 @@ div.statuserr{
 	border-radius: 8px;
 	text-align:center;
 }
-#position
-{
-	width:100%;
-	margin-top: 2px;
-	-webkit-border-radius: 8px;
-	-moz-border-radius: 8px;
-	border-radius: 8px;
-	text-align:center;
+
+div.label{
+    width:70%;	
+    //border:1px solid black;
+    font-size: 80%;
+    padding:2px;
+    float: left;
 }
+
+
+input.inputbox
+{
+	width:20%;
+	height: 22px;
+	
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+	
+	text-align:center;
+	float: right;
+	
+}
+
 #progressbar
 {
 	width:100px;
@@ -134,8 +151,8 @@ div.statuserr{
 }
 #positionIdicator
 {
-    height: 270px;
-    width:300px;
+    height: 300px;
+    width:350px;
     background-color:beige;
     border:4px solid green;
     -webkit-border-radius: 15px;
@@ -143,6 +160,25 @@ div.statuserr{
     border-radius: 15px;    
 }
 
+div.positionline{
+    width:100%;	
+    margin-top: 2px;
+    margin-left: 0px;
+    margin-top: 5px;
+//    border:1px solid black;
+
+    float:left;   
+}
+div.positionblock{
+    width:210px;	
+    margin-top: 10px;
+    margin-left: 10px;
+    height:35px;    
+    -webkit-border-radius: 9px;
+    -moz-border-radius: 9px;
+    border-radius: 9px;	
+    float:left;   
+}
 div.smallAntennadiv {
 	width:2px;	
 	background-color:orange;
@@ -220,16 +256,9 @@ div.bigAntenna {
     float:right;	
 }
 
-div.switchAntenna{
-    width:160px;	
-    margin-top: 10px;
-    margin-left: 10px;
-    height:35px;    
-    -webkit-border-radius: 9px;
-    -moz-border-radius: 9px;
-    border-radius: 9px;	
-    float:left;   
-}
+
+
+
 #mastbar
 {
     width:3px;
@@ -261,31 +290,31 @@ div.switchAntenna{
 }
 #antennaSwitch
 {
-    width:100%;	
-    height: 30px;
-    border:1px solid black;
-    background-color: dodgerblue;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;  
+	width:100%;	
+	height: 30px;
+	border:1px solid black;
+	background-color: dodgerblue;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	
 }
 
 #emergencyRelease
 {
-	width:100%;	
-	margin-top: 10px;
+	width:100%;		
 	height: 45px;
 	border:1px solid black;
 	background-color: buttonface;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 	border-radius: 3px;	
+	float: left;
 }
 
 #emergencyStop
 {
-	width:100%;
-	margin-top: 10px;
+	width:100%;	
 	height: 100px;
 	border:1px solid black;
 	background-color: orangered;

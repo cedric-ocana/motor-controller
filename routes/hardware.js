@@ -327,13 +327,13 @@ var SERVICE_NAME = "HARDWARE-SERVICE";
 var CHANNEL_POSITION_HANDLER = "position-handler";
 
 exports.setPosition = function setPosition(err, position, callback){      
-    client.publish(CHANNEL_POSITION_HANDLER,position,function(){});
+    client.publish(CHANNEL_POSITION_HANDLER,position,callback);
 };
 
 function clrPosition(err,callback){
     client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
         if (tempTargetPosition !== "-1"){
-            client.publish(CHANNEL_POSITION_HANDLER,-1,function(){});    
+            client.publish(CHANNEL_POSITION_HANDLER,-1,callback);    
         }
     });
 }
@@ -441,10 +441,10 @@ service.on("unsubscribe", function(channel, count){
 
 
 
-
 function moveThorwardsPosition(positionReached){    
     client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
-	    tools.getInteger(tempTargetPosition, function(err, targetPosition){
+	  
+	    tools.getFloat(tempTargetPosition, function(err, targetPosition){
 		getPositionInternal(err, function(err, data){
 		    if (err) throw err;                    
 		    with (data){

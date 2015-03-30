@@ -212,7 +212,7 @@ function getValidHeight(value, upperLimit, lowerLimit){
 
 function setPosition(source){
     if (!emergency()){
-        var value = parseInt($("#"+source).val());    
+        var value = parseFloat($("#"+source).val());    
         var range = {};
         range.max = 185;
         range.min = 70;
@@ -234,6 +234,16 @@ function setPosition(source){
         }
     }
 }
+function setCurrentPosition(source){
+    if (!emergency()){  
+	options = {};
+	options.value = $("#"+source).val();	
+	$.ajax({url:'/api/position/measured', type:'PUT', data:options}).success(function(msg){
+		var response = decodeMsg(msg);
+	});
+    }
+}
+
 
 function emergencyStop(){
     options = {};

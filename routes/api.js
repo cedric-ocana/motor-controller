@@ -43,7 +43,7 @@ function onErrorThrowIt(err){
 function setIntFromRequest(field, callback){       
     if(field !== undefined)
     {        
-        var newValue = parseInt(field);
+        var newValue = parseFloat(field);
         if (isNaN(newValue))  
         {                     
             callback(new RangeError( 'Parameter must be a number.'), null);
