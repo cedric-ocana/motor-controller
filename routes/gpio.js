@@ -54,6 +54,7 @@ var internalGetStatus = function(name, callback){
     };
 
 
+
 // Check operating system and load SPI interface if linux is detected.
 if (tools.hardwareAvailable())
 {
@@ -89,13 +90,16 @@ if (tools.hardwareAvailable())
         
     
     function setGpio(pin,value, callback){
-        gpio.write(pin, value, function() {         
+        gpio.write(pin, value, function() {  
             callback(null,'OK');
         });        
     }
     
-    function getGpio(pin, callback){
-        gpio.read(pin, callback);        
+    function getGpio(pin, callback){        
+        gpio.read(pin, function(err, res){
+            if (err) throw err;
+            callback(err, res);
+        });        
     }        
     internalSetLimitoverride = function(callback)
     {
@@ -122,7 +126,8 @@ if (tools.hardwareAvailable())
     };
     
     internalGetLimitswitch = function(callback){
-        getGpio(CONFIGURATION.LIMITSWITCH.PIN, callback);       
+        
+        getGpio(CONFIGURATION.STATUS_LIMIT.PIN, callback);       
     };    
     
     internalGetStatus = function(name, callback){
@@ -148,7 +153,7 @@ exports.getInputStatus = internalGetStatus;
 exports.onLimit = function onLimit(callback){        
         internalLimitSwitch(function(err, value){
             if (err) throw err;
-            if (value === CONFIGURATION.LIMITSWITCH.SET){
+            if (value === CONFIGURATION.STATUS_LIMIT.SET){
                 callback(null);
            }
         });

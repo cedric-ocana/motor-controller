@@ -87,7 +87,7 @@ if (tools.hardwareAvailable())
         internalSetDac(null, CONFIGURATION.DAC.INIT,function(){}); 
 }  
 
-function setLowLevelDacLevel(err, newValue){
+function setDacLevel(err, newValue){
     if (err){
         internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});
         throw err;
@@ -112,7 +112,7 @@ service.on("subscribe", function(channel, count){
 
 service.on("message", function(channel, message){    
     if (channel === CHANNEL_DAC_VALUE){
-        tools.getInteger(message,setLowLevelDacLevel);		
+        tools.getInteger(message,setDacLevel);		
     }
     if (channel === tools.CHANNEL_EMERGENCY){
 	if (message === tools.MSG_EMERGENCY_STOP){
@@ -160,6 +160,8 @@ function internalSetValue(err, newDacValue){
 }
 
 exports.setValue = internalSetValue;
+
+exports.lowLevelDriverNoProtectionSetValue = setDacLevel;
 
 function resetEmulator(err) {
     return CONFIGURATION.DAC.INIT;

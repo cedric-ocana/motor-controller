@@ -1,5 +1,16 @@
 var currentAntennaIsSmallAntenna = 0;
-var emergencyAlreadySet = 0;
+var emergencyDisplayToggler = 0;
+var emergencyPending = 0;
+
+function emergency(){
+    if(emergencyPending === 1){
+        alert("System in emergency situation. Please release before continuing!");
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
 
 function getHeight(elementName)
 {
@@ -7,40 +18,43 @@ function getHeight(elementName)
 }
 
 function control(parameter) {
-	options = {};
-	options.parameter = parameter;
-	//alert(parameter);
-	options.value = 1*($("#"+parameter).val());
-	options.value += 2068;
-	
-	var response = {};
-	$.ajax({url:'/api/speed', type:'PUT', data:options}).success(function(msg){
-		response = decodeMsg(msg);
-	});	
+    if (emergency() === 0){
+        options = {};
+        options.parameter = parameter;
+        options.value = -1*($("#"+parameter).val());
+        options.value += 2068;
+
+        var response = {};
+        $.ajax({url:'/api/speed', type:'PUT', data:options}).success(function(msg){
+                response = decodeMsg(msg);
+        });	
+    }
 }
 
 
 function setSpeed(value)
 {	
-	var rangeMargin = 4;
-	var indicatorHeigth = getHeight("speedindicator");
-	var barHeight = getHeight("speedbar");
-	var range = (barHeight- rangeMargin - indicatorHeigth);
-	var indicatorPosition = 1 + range / 2 * (1- value);
-	if (indicatorPosition > (barHeight - indicatorHeigth))
-	{
-		indicatorPosition = (barHeight - indicatorHeigth);
-	}
-	$("#speed").val(Math.round(value*2068));	
-	control("speed");
-	$("#speedindicator").css('margin-top',indicatorPosition + 'px');	
+    var rangeMargin = 4;
+    var indicatorHeigth = getHeight("speedindicator");
+    var barHeight = getHeight("speedbar");
+    var range = (barHeight- rangeMargin - indicatorHeigth);
+    var indicatorPosition = 1 + range / 2 * (1- value);
+    if (indicatorPosition > (barHeight - indicatorHeigth))
+    {
+            indicatorPosition = (barHeight - indicatorHeigth);
+    }
+    $("#speed").val(Math.round(value*2068));	
+    control("speed");
+    $("#speedindicator").css('margin-top',indicatorPosition + 'px');	
 }
 function set(parameter){
+    if (!emergency()){
 	options = {};
 	options.value = $("#"+parameter).val();		
 	$.ajax({url:'/api/'+parameter, type:'PUT', data:options}).success(function(msg){
 		var response = decodeMsg(msg);
 	});
+    }
 }
 
 function displayAntennaPosition(heigthInCm){
@@ -127,18 +141,20 @@ function update()
     options = {};	
     $.ajax({url:'/api/emergency', type:'GET', data:options}).success(function(msg){	
 	if (msg.value === "1"){
+            emergencyPending = 1;
 	    $("#emergencyStop").css("background-color","gainsboro");
 	    $("#emergencyRelease").css("background-color","greenyellow");
-	    if (emergencyAlreadySet === 1){
-		emergencyAlreadySet = 0;
-		$("#positionIdicator").css("border","4px solid tomato");		
+	    if (emergencyDisplayToggler === 1){
+		emergencyDisplayToggler = 0;
+		$("#positionIdicator").css("border","4px solid black");		
 	    }
 	    else{
-		emergencyAlreadySet = 1;
+		emergencyDisplayToggler = 1;
 		$("#positionIdicator").css("border","4px solid red");
 	    }
 	}
 	else{
+            emergencyPending = 0;
 	    $("#emergencyRelease").css("background-color","gainsboro");
 	    $("#emergencyStop").css("background-color","orangered");
 	    $("#positionIdicator").css("border","4px solid green");
@@ -195,25 +211,27 @@ function getValidHeight(value, upperLimit, lowerLimit){
 }
 
 function setPosition(source){
-    var value = parseInt($("#"+source).val());    
-    var range = {};
-    range.max = 180;
-    range.min = 90;
-    if (smallAntenna === 0){
-	range.max = 160;
-	range.min = 120;	
-    }
-    value = getValidHeight(value, 180,90);
-    if (value > 0){
-	options = {};
-	options.value = value;	
-	$.ajax({url:'/api/position', type:'PUT', data:options}).success(function(msg){
-		var response = decodeMsg(msg);
-	});
-    }
-    else{
-	alert("Height outside of limit range! The valid range is: " + range.min + "cm - " + range.max + "cm");
-	$("#"+source).val("");
+    if (!emergency()){
+        var value = parseInt($("#"+source).val());    
+        var range = {};
+        range.max = 185;
+        range.min = 70;
+        if (currentAntennaIsSmallAntenna === 0){
+            range.max = 175;
+            range.min = 90;	
+        }
+        value = getValidHeight(value, range.max,range.min);
+        if (value > 0){
+            options = {};
+            options.value = value;	
+            $.ajax({url:'/api/position', type:'PUT', data:options}).success(function(msg){
+                    var response = decodeMsg(msg);
+            });
+        }
+        else{
+            alert("Height outside of limit range! The valid range is: " + range.min + "cm - " + range.max + "cm");
+            $("#"+source).val("");
+        }
     }
 }
 
