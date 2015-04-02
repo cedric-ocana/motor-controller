@@ -1,14 +1,37 @@
-var currentAntennaIsSmallAntenna = 0;
+var TRUE = 1;
+var FALSE = 0;
 var emergencyDisplayToggler = 0;
-var emergencyPending = 0;
+var emergencyPending = FALSE;
+var keypressed = 0;
+var eventHandlerDone = 0;
+var previousSpeed = 0;
+
+var ANTENNAS={"SMALL":	{	"ID":1,
+							"RANGE":{"MAX":185,"MIN":70},
+							"NAME":"small antenna",
+							"CLASSES":{	"POLE":"smallAntennadiv",
+										"MAIN":"smallAntenna"
+							},
+							"NEXT":"BIG"
+						},
+			  "BIG":	{	"ID":2,
+							"RANGE":{"MAX":175,"MIN":90},
+							"NAME":"big antenna",
+							"CLASSES":{	"POLE":"bigAntennadiv",
+										"MAIN":"bigAntenna"
+							},
+							"NEXT":"SMALL"						
+						}
+			 };		  		  
+var currentAntenna = ANTENNAS.BIG;	
 
 function emergency(){
-    if(emergencyPending === 1){
+    if(emergencyPending === TRUE){
         alert("System in emergency situation. Please release before continuing!");
-        return 1;
+        return TRUE;
     }
     else{
-        return 0;
+        return FALSE;
     }
 }
 
@@ -18,7 +41,7 @@ function getHeight(elementName)
 }
 
 function control(parameter) {
-    if (emergency() === 0){
+    if (emergency() === FALSE){
         options = {};
         options.parameter = parameter;
         options.value = -1*($("#"+parameter).val());
@@ -43,18 +66,29 @@ function setSpeed(value)
     {
             indicatorPosition = (barHeight - indicatorHeigth);
     }
+	if (indicatorPosition < 0){
+		indicatorPosition = 0;
+	}
+		
     $("#speed").val(Math.round(value*2068));	
     control("speed");
     $("#speedindicator").css('margin-top',indicatorPosition + 'px');	
 }
-function set(parameter){
+
+function ajaxPutValue(controlWithValue, urlOnTopOfAPI){
+	var options = {};
+	options.value = $("#"+controlWithValue).val();
+	ajaxPut(urlOnTopOfAPI, options);
+}
+
+function ajaxPut(urlOnTopOfAPI, options){
     if (!emergency()){
-	options = {};
-	options.value = $("#"+parameter).val();		
-	$.ajax({url:'/api/'+parameter, type:'PUT', data:options}).success(function(msg){
-		var response = decodeMsg(msg);
-	});
-    }
+		$.ajax({url:'/api/'+urlOnTopOfAPI, type:'PUT', data:options}).success(function(msg){});
+    }	
+}
+
+function setMeasuredPosition(source){
+	ajaxPutValue(source, 'position/measured');
 }
 
 function displayAntennaPosition(heigthInCm){
@@ -84,45 +118,46 @@ function speedControl(position)
 	setSpeed(speed);
 }
 
+function speedControlOnMouseMove(event){	
+	var unlinkMargin = 5;
+	var xpos = event.clientX - $("#manualController").position().left+ $(window).scrollLeft();
+	var ypos = event.clientY - $("#manualController").position().top + $(window).scrollTop();
+	
+	var unlink = 0;
+	if (xpos <= unlinkMargin  | xpos > (parseInt($("#manualControllerPad").css("width"))-unlinkMargin))
+	{
+		unlink = 1;
+	}
+	if (ypos <= unlinkMargin  | ypos > (parseInt($("#manualControllerPad").css("height"))-unlinkMargin))
+	{
+		unlink = 1;
+	}		
+	if(unlink === 1)
+	{
+		keypressed = 0;				
+	}
+	
+	if (keypressed == 1){		
+		speedControl(event.clientY - $("#manualController").position().top);		
+	}
+	else{
+		previousSpeed = event.clientY - $("#manualController").position().top;
+	}
+}
 
-function setupControl()
+function enableSpeedController(event)
 {	
-	$("#speedbar").css("background-color","silver");
-	setSpeed(0);
-	$( "#manualControllerPad" ).mousemove(function( event ) {	
-		var unlinkMargin = 5;
-		var xpos = event.clientX - $("#manualController").position().left+ $(window).scrollLeft();
-		var ypos = event.clientY - $("#manualController").position().top + $(window).scrollTop();
-		
-		//$("#info").text("ypos" + ypos + "<>" + ( $(window).scrollTop()));
-		var unlink = 0;
-		if (xpos <= unlinkMargin  | xpos > (parseInt($("#manualControllerPad").css("width"))-unlinkMargin))
-		{
-			unlink = 1;
-		}
-		if (ypos <= unlinkMargin  | ypos > (parseInt($("#manualControllerPad").css("height"))-unlinkMargin))
-		{
-			unlink = 1;
-		}		
-		if(unlink == 1)
-		{
-			unlinkControl();
-		}
-		else
-		{
-			speedControl(event.clientY - $("#manualController").position().top);		
-		}
-	});
+	keypressed = 1;
+	speedControl(previousSpeed);
 }
 
-function unlinkControl()
+function disableSpeedController()
 {
-	$( "#manualControllerPad" ).unbind('mousemove');
-	$("#speedbar").css("background-color","gray");
-	setSpeed(0);
+	keypressed = 0;
+	speedControl(150);
 }
 
-
+//mousemove="enableSpeedController()", onmouseup="disableSpeedController()"
 function decodeMsg(msg)
 {
 	$("#currentheight").val(msg.value);
@@ -133,6 +168,13 @@ function decodeMsg(msg)
 
 function update()
 {
+	if (eventHandlerDone ==0){
+		$( "#manualControllerPad" ).on('mousemove',function(e){
+			$("#newPosition").val(e.button);
+			speedControlOnMouseMove(e);
+		});
+		eventHandlerDone = 1;
+	}
     options = {};	
     $.ajax({url:'/api/position', type:'GET', data:options}).success(function(msg){		
 		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
@@ -141,7 +183,7 @@ function update()
     options = {};	
     $.ajax({url:'/api/emergency', type:'GET', data:options}).success(function(msg){	
 	if (msg.value === "1"){
-            emergencyPending = 1;
+            emergencyPending = TRUE;
 	    $("#emergencyStop").css("background-color","gainsboro");
 	    $("#emergencyRelease").css("background-color","greenyellow");
 	    if (emergencyDisplayToggler === 1){
@@ -154,7 +196,7 @@ function update()
 	    }
 	}
 	else{
-            emergencyPending = 0;
+            emergencyPending = FALSE;
 	    $("#emergencyRelease").css("background-color","gainsboro");
 	    $("#emergencyStop").css("background-color","orangered");
 	    $("#positionIdicator").css("border","4px solid green");
@@ -163,99 +205,59 @@ function update()
 }
 setInterval("update();", 500);
 
-function switchAntenna(){
-    if (currentAntennaIsSmallAntenna === 0){	
-	currentAntennaIsSmallAntenna = 1;
-	smallAntenna();	
-    }
-    else{	
-	currentAntennaIsSmallAntenna = 0;
-	bigAntenna();
-    }
+function switchAntenna(){	
+	currentAntenna = ANTENNAS[currentAntenna.NEXT];	
+	updateAntennaRepresentation();
 }
-
-function removeAntenna(){
-    $("#pole1").removeClass("smallAntennadiv bigAntennadiv");  
-    $("#pole2").removeClass("smallAntennadiv bigAntennadiv");    
-    $("#pole3").removeClass("smallAntennadiv bigAntennadiv");
-    $("#pole4").removeClass("smallAntennadiv bigAntennadiv");   
+function updateAntennaRepresentation(){
+	hideAntennas();	
+	with(currentAntenna.CLASSES){
+		for (var i = 1; i <= 4; i++){
+			$("#pole"+i).addClass(POLE);
+		}    
+		$("#antenna").addClass(MAIN); 
+	}
+	$("#antennaSwitch").val("Click to switch to " + ANTENNAS[currentAntenna.NEXT].NAME);
+}
+function hideAntennas(){
+	for (var i = 1; i <= 4; i++){
+		$("#pole"+i).removeClass();
+	}  
     $("#antenna").removeClass("smallAntenna bigAntenna"); 
 }
 
-function smallAntenna(){
-    $("#antennaSwitch").val("switch to big antenna");
-    removeAntenna();
-    $("#pole1").addClass("smallAntennadiv");  
-    $("#pole2").addClass("smallAntennadiv");    
-    $("#pole3").addClass("smallAntennadiv");
-    $("#pole4").addClass("smallAntennadiv");   
-    $("#antenna").addClass("smallAntenna");   
+function getValidHeight(value){
+	with(currentAntenna){
+		if (value <= RANGE.MAX & value >= RANGE.MIN){
+			return value;
+		}
+		else{
+			alert("Wrong heigth!\nThe valid range for the " + NAME +" is:\n" +
+				  RANGE.MIN + "cm - " + RANGE.MAX + "cm");
+			return -1;
+		}
+	}
 }
 
-function bigAntenna(){
-    $("#antennaSwitch").val("switch to small antenna");
-    removeAntenna();
-    $("#pole1").addClass("bigAntennadiv");  
-    $("#pole2").addClass("bigAntennadiv");    
-    $("#pole3").addClass("bigAntennadiv");
-    $("#pole4").addClass("bigAntennadiv");   
-    $("#antenna").addClass("bigAntenna");   
-}
-function getValidHeight(value, upperLimit, lowerLimit){
-    if (value <= upperLimit & value >= lowerLimit){
-	return value;
-    }
-    else{
-	return -1;
-    }
-}
-
-function setPosition(source){
-    if (!emergency()){
-        var value = parseFloat($("#"+source).val());    
-        var range = {};
-        range.max = 185;
-        range.min = 70;
-        if (currentAntennaIsSmallAntenna === 0){
-            range.max = 175;
-            range.min = 90;	
-        }
-        value = getValidHeight(value, range.max,range.min);
-        if (value > 0){
-            options = {};
-            options.value = value;	
-            $.ajax({url:'/api/position', type:'PUT', data:options}).success(function(msg){
-                    var response = decodeMsg(msg);
-            });
-        }
-        else{
-            alert("Height outside of limit range! The valid range is: " + range.min + "cm - " + range.max + "cm");
-            $("#"+source).val("");
-        }
-    }
-}
-function setCurrentPosition(source){
-    if (!emergency()){  
-	options = {};
-	options.value = $("#"+source).val();	
-	$.ajax({url:'/api/position/measured', type:'PUT', data:options}).success(function(msg){
-		var response = decodeMsg(msg);
-	});
+function setNewAntennaHeight(source){	
+	disableSpeedController();
+    if (!emergency()){		
+		var options = {};
+		options.value = getValidHeight(parseFloat($("#"+source).val()));
+		if (options.value > 0){			
+			ajaxPut('position', options);
+		}
+		else{            
+			$("#"+source).val("");
+		}
     }
 }
 
 
 function emergencyStop(){
-    options = {};
-    options.value = "STOP";	
-    $.ajax({url:'/api/emergency', type:'PUT', data:options}).success(function(msg){
-	    var response = decodeMsg(msg);
-    });
+    $.ajax({url:'/api/emergency', type:'PUT'}).success(function(){});
 }
 function emergencyRelease(){
-    options = {};
-    options.value = "RELEASE";	
-    $.ajax({url:'/api/emergency', type:'DELETE', data:options}).success(function(msg){
-	    var response = decodeMsg(msg);
-    });
+    $.ajax({url:'/api/emergency', type:'DELETE'}).success(function(){});
 }
+

@@ -103,7 +103,10 @@ var configuration = {"mode":mode,
                         "dtAcceleration": 1                        
                         }                                  
                     };
-                    
+					
+tools.loadSettings("config.hw",configuration, function(err, newSettings){
+	configuration = newSettings;
+});                    
                     
 var previousCall = function(){};               
 
@@ -545,6 +548,7 @@ exports.setMeasured = function setPosition(err, measuredPosition, callback){
         configuration.adc.loffset = measuredPosition - potiPosition;
         console.log("New Offset:" + configuration.adc.loffset);
         callback(null, configuration.adc.loffset );
+		tools.saveSettings("config.hw", configuration);
     });
 };
 
@@ -556,7 +560,6 @@ exports.enableMotor =  gpio.enableDriver;
 exports.disableMotor =  gpio.disableDriver;
 exports.setLimitoverride =  gpio.setLimitoverride;
 exports.clrLimitoverride =  gpio.clrLimitoverride;
-
 exports.getLimitswitch = gpio.getLimitswitch;
 exports.getInputStatus = gpio.getInputStatus;
 

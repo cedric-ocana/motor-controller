@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 var os = require('os');
+var fs = require('fs');
 
 exports.CHANNEL_EMERGENCY = "emergency";
 exports.MSG_EMERGENCY_STOP = "emergency-stop";
@@ -37,4 +38,26 @@ exports.getFloat = function getFloat(field, callback){
 	else{
 		callback(new Error("Called with undefinedn value parameter."), null);
 	}
+};
+
+
+exports.loadSettings = function loadSettings(identifier, defaultValues, callback){
+	fs.exists(identifier, function(exists){
+		if (exists){
+			fs.readFile(identifier, function (err, data) {
+				if (err) throw err;
+				callback(null, JSON.parse(data));
+			});
+		}
+		else{
+			callback(null, defaultValues);	
+		}		
+	});
+};
+
+exports.saveSettings = function saveSettings(identifier, configuration){
+		fs.writeFile(identifier, JSON.stringify(configuration), function (err) {
+			if (err) throw err;
+			console.log("New HW-Config file created.");
+		});			
 };

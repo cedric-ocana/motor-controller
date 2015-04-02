@@ -1,11 +1,21 @@
 body {
   padding: 50px;
-  font: 12px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 16px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
 a {
-  color: #00B7FF;
+	color: #000000;
+	font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;  
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+	
 }
+
 
 input {
     padding: 0 0px 0 0px;
@@ -14,10 +24,10 @@ input {
     border-radius: 4px;   
 }
 
-label {
+div.label {
     display: inline;
-    padding: 2px;
-    font: 10px "Lucida Grande", Helvetica, Arial, sans-serif;
+    margin-left: 2px;   
+    height: 100%;    
 }
 
 div.status{
@@ -54,29 +64,35 @@ div.statuserr{
 
 #manualController
 {
-	width:155px;
+	width:178px;
+	float: left;
+	height: 350px;
+	//border:1px solid black;
 }
 
-#manualControllerPad{
-	width:128px;
+div.controller{
+	width:150px;
 	padding:1px;
 	background-color:white;
 	border:1px solid black;
-	height:200px;
+	height:300px;
 	-webkit-border-radius: 15px;
 	-moz-border-radius: 15px;
 	border-radius: 15px;
-	background-image:url('pictures/Speed.png');
+	background-color: orange;
+	//background-image:url('pictures/Speed.png');
 	float:left;
+	cursor: pointer;
+	position: absolute;
 }
 
 #speedbar
 {
 	width:14px;
 	padding:1px;
-	background-color:gray;
+	background-color:whitesmoke;
 	border:1px solid black;
-	height:200px;
+	height:300px;
 	-webkit-border-radius: 15px;
 	-moz-border-radius: 15px;
 	border-radius: 15px;
@@ -84,35 +100,59 @@ div.statuserr{
 }
 #speedindicator
 {
-	width:12px;
+	width:11px;
 	padding:0px;
-	background-color:orange;
+	background-color:cadetblue;
 	margin:0px;
-	margin-top:90px;
+	margin-top:141px;
 	border:1px solid black;
-	height:17px;
+	height:18px;
 	-webkit-border-radius: 8px;
 	-moz-border-radius: 8px;
 	border-radius: 8px;
-	float:center;
 }
 
-#speed
+input.speedIndicator
 {
-	width:150px;
-	margin-top: 2px;
+	background-color:lightblue;
+	border:1px solid black;
 	-webkit-border-radius: 8px;
 	-moz-border-radius: 8px;
 	border-radius: 8px;
+	z-index: 0;
 	text-align:center;
+	bottom: 2px;
+	width: 98%;
+}
+div.speedIndicator{
+	bottom: 2px;
+	margin-bottom: 2px;
 }
 
 div.label{
-    width:70%;	
-    //border:1px solid black;
+    width:70%;	    
     font-size: 80%;
     padding:2px;
     float: left;
+}
+div.labelTop{
+	top: 2px;
+	text-align:center;
+}
+div.labelCenter{	
+	position: absolute;	
+	top:50%;
+	//border:1px solid black;	
+	height: 72px;
+	margin-top: -36px;	
+	text-align:center;
+
+}
+div.labelBottom{	
+	position: absolute;	
+	bottom: 2px;
+	width: 100%;
+	text-align: center;
 }
 
 
@@ -151,13 +191,14 @@ input.inputbox
 }
 #positionIdicator
 {
-    height: 300px;
+    height: 316px;
     width:350px;
     background-color:beige;
     border:4px solid green;
     -webkit-border-radius: 15px;
     -moz-border-radius: 15px;
-    border-radius: 15px;    
+    border-radius: 15px;   
+    float: right;
 }
 
 div.positionline{
@@ -293,7 +334,7 @@ div.bigAntenna {
 	width:100%;	
 	height: 30px;
 	border:1px solid black;
-	background-color: dodgerblue;
+	background-color:azure;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 	border-radius: 3px;

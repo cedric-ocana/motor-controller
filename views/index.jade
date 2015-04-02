@@ -4,32 +4,39 @@ block content
 	script(src='/javascripts/jquery-2.1.1.js')
 	script(src='/javascripts/motor-controller.js')
 	h1= title	
-	h2
-		|Speed control
-	p
+	div(id='mkpanel')
 		div(id="manualController")
-			div(id="manualControllerPad",  onmousedown="setupControl()", onmouseup="unlinkControl()", class="manualControllerPad")
+			div(id="manualControllerPad",  class='controller', onmousedown="enableSpeedController()", onmouseup="disableSpeedController()")
+				div(class='labelTop')
+					a:|UP (MAX SPEED)
+				div(class='labelCenter')
+					a:|press the left mouse button and move up and down to change the speed and the direction.
+				div(class='labelBottom')
+					a:|DOWN (MAX SPEED)				
 			div(id="speedbar")
 				div(id="speedindicator")
-			input(id="speed",  disabled)
-	h2
-		|Position control [cm]
+			div(class='speedIndicator')
+				input(id="speed", class='speedIndicator',onkeyup = "{if(event.keyCode==13)setSpeed(this.value/2068)}")
+
+
+
+			
 		div(id="positionIdicator")
 			div(class="positionblock")
 				div( class="positionline")
-					input(id='antennaSwitch', type='button', value='switch to small antenna', onclick='switchAntenna();')
+					input(id='antennaSwitch', type='button', value='Click to switch to small antenna', onclick='switchAntenna();')
 				div( class="positionline")
 					div(class="label")
-						|New height in cm:
-					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setPosition(this.id)}" )
+						a:|New height in cm:
+					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setNewAntennaHeight(this.id)}" )
 				div(class="positionline")
 					input(id="emergencyStop", type='button', value="EMERGENCY STOP" ,onclick = "emergencyStop();" )
 				div( class="positionline")
-					input(id="emergencyRelease", type='button', value="RELEASE EMERGENCY" ,onclick = "emergencyRelease();" )
+					input(id="emergencyRelease", type='button', value="RECOVER FROM EMERGENCY" ,onclick = "emergencyRelease();" )
 				div( class="positionline")
 					div(class="label")
-						|Measured height:
-					input(class='inputbox', placeholder='0', id='currentPosition' ,onkeyup = "{if(event.keyCode==13)setCurrentPosition(this.id)}" )
+						a:|Measured height in cm:
+					input(class='inputbox', placeholder='0', id='currentPosition' ,onkeyup = "{if(event.keyCode==13)setMeasuredPosition(this.id)}" )
 			div(id="fixation", class="antennafixation")
 				input(id='currentPositionText' )
 			div(id="mastbar")

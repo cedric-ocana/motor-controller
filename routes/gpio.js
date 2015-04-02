@@ -39,17 +39,17 @@ var internalClrMotordriver = function(callback){
 
 var internalGetLimitswitch = function(callback){
         console.log('LIMITSWITCH:\tUNDEF-FALSE');
-        callback(null, 0);
+        callback(null, 1);
     };
     
 var internalGetStatus = function(name, callback){
         if (CONFIGURATION.hasOwnProperty(name)){
             console.log(name + ':\tUNDEF-FALSE');
-            callback(null, -1);
+            callback(null, 1);
         }
         else{
             console.log('UNKNOWN IO:\tUNDEF-FALSE');
-            callback(null, -1);            
+            callback(null, 1);            
         }
     };
 
