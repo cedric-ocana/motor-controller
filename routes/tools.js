@@ -7,6 +7,7 @@ var os = require('os');
 var fs = require('fs');
 
 exports.CHANNEL_EMERGENCY = "emergency";
+exports.CHANNEL_HEIGHT = "height";
 exports.MSG_EMERGENCY_STOP = "emergency-stop";
 exports.MSG_EMERGENCY_RELEASE = "emergency-release";
 exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";

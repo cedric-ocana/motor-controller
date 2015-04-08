@@ -54,8 +54,7 @@ if (tools.hardwareAvailable())
 						res = wire.readBytes(0x0C,3,function(err,res){});                                                 
 						return res.readUInt16BE(0);
 					 };
-                                         
-                                         
+
         internalGetAdcCallback = function(err, callback){
             if (err) throw err;
             sendCommand(readBytes(function convertToUint(err, res){                 

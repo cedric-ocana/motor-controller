@@ -26,7 +26,8 @@ var ANTENNAS={"SMALL":	{	"ID":1,
 var currentAntenna = ANTENNAS.BIG;	
 
 function emergency(){
-    if(emergencyPending === TRUE){
+    if(emergencyPending === TRUE){	
+		keypressed = 0;
         alert("System in emergency situation. Please release before continuing!");
         return TRUE;
     }
@@ -187,7 +188,16 @@ function drawStatus()
     $.ajax({url:'/api/position', type:'GET'}).success(function(msg){		
 		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
 		drawAntennaPosition(parseInt(msg.value));
-	    });    
+	    });   
+		
+    $.ajax({url:'/api/antenna', type:'GET'}).success(function(msg){
+			//alert(msg.value);
+			if(ANTENNAS.hasOwnProperty(msg.value)){
+				currentAntenna = ANTENNAS[msg.value];
+				drawAntenna();
+				
+			}
+	    }); 		
     $.ajax({url:'/api/emergency', type:'GET'}).success(function(msg){	
 		if (msg.value === "1" && emergencyPending === FALSE){
 			emergencyPending = TRUE;
@@ -228,8 +238,7 @@ function drawClearEmergency(){
 }
 
 function switchAntenna(){	
-	currentAntenna = ANTENNAS[currentAntenna.NEXT];	
-	drawAntenna();
+	$.ajax({url:'/api/antenna/'+currentAntenna.NEXT, type:'PUT'}).success(function(){});
 }
 function drawAntenna(){
 	hideAntennas();

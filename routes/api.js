@@ -231,6 +231,37 @@ router.route('/gpio/status/:io?')
         }        
         
     });
+	
+router.route('/antenna/:id?')              
+    .get(function(req, res){
+        var routeId = 'antenna-get';        
+		hardware.getAntenna(null, function getAntennaSender(err, result){
+			generateResponse(null, routeId, result, function send(err, data){
+				data.result = result;
+				res.json(data);
+			});                           
+		});             
+    })    
+	.put(function(req, res){ 
+        var routeId = 'antenna-put';
+        var request = req.params;  		
+		if (request.hasOwnProperty("id")){
+			hardware.setAntenna(null, request.id, function setAntennaSender(err, result){
+				generateResponse(null, routeId, result, function send(err, data){
+					data.result = result;
+					res.json(data);
+				});                           
+			});			
+		}
+        else{
+            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), routeId, {}, function send(err, data){
+                res.json(data);
+            });                       	
+        } 		
+        var response = getResponseMessageOK("motordriver");       	
+        hardware.enableMotor(onErrorThrowIt);
+        res.json(response);
+    }); 	
 
 
 router.route('/speed')

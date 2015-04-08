@@ -39,6 +39,26 @@ function getSpeed(signedRatio){
     return dac.init() + dac.init() * signedRatio;
 }
 
+var ANTENNAS={"SMALL":	{	"ID":"SMALL",
+							"RANGE":{"MAX":185,"MIN":70},
+							"NAME":"small antenna",
+							"CLASSES":{	"POLE":"smallAntennadiv",
+										"MAIN":"smallAntenna"
+							},
+							"NEXT":"BIG"
+						},
+			  "BIG":	{	"ID":"BIG",
+							"RANGE":{"MAX":175,"MIN":90},
+							"NAME":"big antenna",
+							"CLASSES":{	"POLE":"bigAntennadiv",
+										"MAIN":"bigAntenna"
+							},
+							"NEXT":"SMALL"						
+						}
+			 };	
+
+var currentAntenna = ANTENNAS.BIG;
+
 var configuration = {"mode":mode,
                      "status":-1,
                     "dac":{"value":0},
@@ -229,8 +249,7 @@ function celerate(index, vDelta, vTarget, dt, table, callback) {
 }
 
 function clrSpeedValueInternal(err, callback){ 
-    if (err) throw err; 
-    
+    if (err) throw err;    
     changeSpeed(configuration.speed.zero, callback);    
 }
 exports.clrSpeed = clrSpeedValueInternal;
@@ -238,6 +257,9 @@ exports.clrSpeed = clrSpeedValueInternal;
 function setSpeedValueInternal(err, value, callback){ 
     if (err) throw err;     
     clrPosition();
+	if (emulatorActive()){  
+		configuration.adc.value = configuration.adc.value + (value / 2068 + 2068)/10;
+	}
     changeSpeed(value, callback);    
 }
 exports.setSpeed = setSpeedValueInternal;
@@ -250,7 +272,7 @@ function clrDacValueInternal(err, callback){
 exports.clrDacValue = clrDacValueInternal;
 
 function setDacValueInternal(err, newDacValue){   
-    if (err) throw err;        
+    if (err) throw err;	
     dac.setValue(err, newDacValue, function(){});
 }
 
@@ -303,12 +325,7 @@ function move(err, distance, settings, callback){
             changeSpeed(settings.normal.speed, callback);
         }
         else{           
-//            if (distance > settings.fast.distance) {
-                changeSpeed(settings.fast.speed, callback);
-//            }
-//            else{
-//                clrSpeedValueInternal(null,callback);
-//            }
+            changeSpeed(settings.fast.speed, callback);
         }
     }
 }
@@ -361,45 +378,61 @@ function isEmergencyOngoing(err, callback){
 exports.isEmergencyOngoing = isEmergencyOngoing;
 
 function getPositionFromAdcValue(adcValue){     
-    with (configuration.adc){        
-        return lmax - adcValue * multiplicator + loffset;
+    with (configuration.adc){
+		var height = lmax - adcValue * multiplicator + loffset;
+		client.publish(tools.CHANNEL_HEIGHT, height,function(){});
+        return height;
     }
 }
 
 function getPositionInternal(err, callback){      
     internalGetSpeed(err, function(err, value){
-        if (err) throw err;         
+        if (err) throw err;         		
         value.position = getPositionFromAdcValue(value.adc);
         //console.log("Calculated Value: " + value.position  +"\t ADC - Value: " + value.adc);
         callback(null, value);
     });
 }
 
+function recoverFromOutOfRange(callback){                  
+	getPositionInternal(null, function(err, value){
+		var speed = configuration.speed.down.normal.speed;
+		if(value.position <= 135){		   
+			speed  = configuration.speed.up.normal.speed;	
+			if (emulatorActive()){       
+				configuration.adc.value = configuration.adc.value - 20;
+			}			
+		}
+		else{
+			if (emulatorActive()){       
+				configuration.adc.value = configuration.adc.value + 20;
+			}
+		}
+		console.log("Recovering from out of range. DAC:" + speed);
+		gpio.clrLimitoverride(function(err, status){
+                setTimeout(function(){               	    
+					dac.lowLevelDriverNoProtectionSetValue(null, speed);		    
+					gpio.setLimitoverride(function(){});
+                    setEmergency();
+                    callback();
+                },500);			
+		});
+	});
+}
+
 function monitorStatus(){   
     gpio.getLimitswitch(function(err, limitSwitch){
         if (limitSwitch == 0){	            
-            gpio.clrLimitoverride(function(err, status){
-                setTimeout(function(){               	    
-                    getPositionInternal(null, function(err, value){
-                        var speed = configuration.speed.down.normal.speed;
-                        if(value.position <= 135){		   
-                            speed  = configuration.speed.up.normal.speed;	    
-                        }
-                        console.log("Recovering from out of range. DAC:" + speed);
-                        dac.lowLevelDriverNoProtectionSetValue(null, speed);		    
-                        gpio.setLimitoverride(function(){});
-                    });
-                    setEmergency();
-                    setTimeout(monitorStatus, 500);                    
-                },500);
-            });
+            recoverFromOutOfRange(function(){
+				setTimeout(monitorStatus, 500);
+			});
         }
         else{
             console.log("Monitoring limit switch.");
             isEmergencyOngoing(null, function(err, value){
                 if(value==="1"){
                     dac.reset();
-                }                
+                }
             });
             setTimeout(monitorStatus, 500);
         }           
@@ -411,7 +444,7 @@ function monitorStatus(){
 service.on("subscribe", function(channel, count){
     console.log(SERVICE_NAME + " subscribed for channel: " + channel);
     if (channel === CHANNEL_POSITION_HANDLER){	
-	client.set(CACHED_POSITIONLOOP_ACTIVE,"1");	
+		client.set(CACHED_POSITIONLOOP_ACTIVE,"1");	
     }
 });
 
@@ -423,16 +456,23 @@ service.on("message", function(channel, message){
         }); 
     }
     if (channel === tools.CHANNEL_EMERGENCY){
-	if (message === tools.MSG_EMERGENCY_STOP){
-	    service.unsubscribe(CHANNEL_POSITION_HANDLER);		    
-	}
-	if (message === tools.MSG_EMERGENCY_RELEASE){
-	    service.subscribe(CHANNEL_POSITION_HANDLER);
-	    getPositionInternal(null, function(err, data){
-		client.set(CACHED_TARGET_POSITION,data.position);
-	    });	    
-	}	
+		if (message === tools.MSG_EMERGENCY_STOP){
+			service.unsubscribe(CHANNEL_POSITION_HANDLER);		    
+		}
+		if (message === tools.MSG_EMERGENCY_RELEASE){
+			service.subscribe(CHANNEL_POSITION_HANDLER);
+			getPositionInternal(null, function(err, data){
+				client.set(CACHED_TARGET_POSITION,data.position);
+			});	    
+		}	
     }
+	if (channel === tools.CHANNEL_HEIGHT){
+		tools.getFloat(message, function(err, value){
+			if ((value > currentAntenna.RANGE.MAX) || (value < currentAntenna.RANGE.MIN)){
+				recoverFromOutOfRange(function(){});		
+			}			
+		});
+	}
 });
 
 service.on("unsubscribe", function(channel, count){
@@ -553,6 +593,21 @@ exports.setMeasured = function setPosition(err, measuredPosition, callback){
 };
 
 
+function getAntenna(err, callback){
+	callback(err, currentAntenna.ID);
+}
+
+
+function setAntenna(err, newAntenna, callback){
+	if (err) throw err
+	if (ANTENNAS.hasOwnProperty(newAntenna)){
+		currentAntenna = ANTENNAS[newAntenna];
+	}
+	callback(null,currentAntenna.ID);
+	
+}
+exports.getAntenna = getAntenna;
+exports.setAntenna = setAntenna;
 exports.getPosition = getPositionInternal;
 
 
@@ -568,6 +623,7 @@ exports.quit = dac.quit;
 function init(){
     setTimeout(monitorStatus, 2500);
     service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
+	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
     isEmergencyOngoing(null, function(err, emergency){
         if (emergency === "0"){          
             service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
