@@ -30,7 +30,7 @@ block content
 						a:|New height in cm:
 					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setNewAntennaHeight(this.id)}" )
 				div(class="positionline")
-					input(id="emergencyStop", type='button', value="EMERGENCY STOP" ,onclick = "emergencyStop();" )
+					input(id="emergencyStop", type='button', value="STOP" ,onclick = "emergencyStop();" )
 				div( class="positionline")
 					input(id="emergencyRelease", type='button', value="RECOVER FROM EMERGENCY" ,onclick = "emergencyRelease();" )
 				div( class="positionline")

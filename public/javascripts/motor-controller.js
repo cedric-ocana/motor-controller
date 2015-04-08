@@ -3,7 +3,7 @@ var FALSE = 0;
 var emergencyDisplayToggler = 0;
 var emergencyPending = FALSE;
 var keypressed = 0;
-var eventHandlerDone = 0;
+var eventHandlerDone = FALSE;
 var previousSpeed = 0;
 
 var ANTENNAS={"SMALL":	{	"ID":1,
@@ -75,23 +75,23 @@ function setSpeed(value)
     $("#speedindicator").css('margin-top',indicatorPosition + 'px');	
 }
 
-function ajaxPutValue(controlWithValue, urlOnTopOfAPI){
+function controllerApiPutValue(controlWithValue, urlOnTopOfAPI){
 	var options = {};
 	options.value = $("#"+controlWithValue).val();
-	ajaxPut(urlOnTopOfAPI, options);
+	controllerApiPut(urlOnTopOfAPI, options);
 }
 
-function ajaxPut(urlOnTopOfAPI, options){
+function controllerApiPut(url, options){
     if (!emergency()){
-		$.ajax({url:'/api/'+urlOnTopOfAPI, type:'PUT', data:options}).success(function(msg){});
+		$.ajax({url:'/api/'+url, type:'PUT', data:options}).success(function(msg){});
     }	
 }
 
 function setMeasuredPosition(source){
-	ajaxPutValue(source, 'position/measured');
+	controllerApiPutValue(source, 'position/measured');
 }
 
-function displayAntennaPosition(heigthInCm){
+function drawAntennaPosition(heigthInCm){
    var position = getHeight("mastbar") - heigthInCm;    
    $("#fixation").css("margin-top",(position+31) + 'px');    
    $("#tray").css("margin-top",position + 'px'); 
@@ -166,59 +166,82 @@ function decodeMsg(msg)
 	return response;
 }
 
-function update()
-{
-	if (eventHandlerDone ==0){
-		$( "#manualControllerPad" ).on('mousemove',function(e){
+var intervalDtawStatus;
+
+function init(){
+	if (typeof $("#manualControllerPad" ).mousemove === "function"){
+		$("#manualControllerPad" ).on('mousemove',function(e){
 			$("#newPosition").val(e.button);
 			speedControlOnMouseMove(e);
 		});
-		eventHandlerDone = 1;
-	}
-    options = {};	
-    $.ajax({url:'/api/position', type:'GET', data:options}).success(function(msg){		
+	}  
+	clearInterval(intervalInitialization);
+	intervalDtawStatus = setInterval("drawStatus();", 200);
+}
+
+var intervalInitialization = setInterval("init();",500);
+
+function drawStatus()
+{	
+  
+    $.ajax({url:'/api/position', type:'GET'}).success(function(msg){		
 		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
-		displayAntennaPosition(parseInt(msg.value));
-	    });
-    options = {};	
-    $.ajax({url:'/api/emergency', type:'GET', data:options}).success(function(msg){	
-	if (msg.value === "1"){
-            emergencyPending = TRUE;
-	    $("#emergencyStop").css("background-color","gainsboro");
-	    $("#emergencyRelease").css("background-color","greenyellow");
-	    if (emergencyDisplayToggler === 1){
-		emergencyDisplayToggler = 0;
-		$("#positionIdicator").css("border","4px solid black");		
-	    }
-	    else{
-		emergencyDisplayToggler = 1;
-		$("#positionIdicator").css("border","4px solid red");
-	    }
-	}
-	else{
-            emergencyPending = FALSE;
-	    $("#emergencyRelease").css("background-color","gainsboro");
-	    $("#emergencyStop").css("background-color","orangered");
-	    $("#positionIdicator").css("border","4px solid green");
-	}
+		drawAntennaPosition(parseInt(msg.value));
+	    });    
+    $.ajax({url:'/api/emergency', type:'GET'}).success(function(msg){	
+		if (msg.value === "1" && emergencyPending === FALSE){
+			emergencyPending = TRUE;
+			drawSetEmergency();
+		}
+		if (msg.value !== "1" && emergencyPending === TRUE){
+			emergencyPending = FALSE;
+			drawClearEmergency();
+		}
     });		
 }
-setInterval("update();", 500);
+
+var intervalEmergencyHighlighter;
+
+function drawEmergencyHighlighting(){
+	if (emergencyDisplayToggler === 1){
+		emergencyDisplayToggler = 0;
+		$("#positionIdicator").css("border","4px solid red");
+	}
+	else{
+		emergencyDisplayToggler = 1;
+		$("#positionIdicator").css("border","4px solid black");	
+	}
+}
+
+function drawSetEmergency(){
+	$("#emergencyStop").css("background-color","gainsboro");
+	$("#emergencyRelease").css("background-color","greenyellow");	
+	intervalEmergencyHighlighter = setInterval("drawEmergencyHighlighting();", 500);
+}
+
+function drawClearEmergency(){
+	$("#emergencyRelease").css("background-color","gainsboro");
+	$("#emergencyStop").css("background-color","orangered");
+	clearInterval(intervalEmergencyHighlighter);
+	$("#positionIdicator").css("border","4px solid green");	
+	
+}
 
 function switchAntenna(){	
 	currentAntenna = ANTENNAS[currentAntenna.NEXT];	
-	updateAntennaRepresentation();
+	drawAntenna();
 }
-function updateAntennaRepresentation(){
-	hideAntennas();	
+function drawAntenna(){
+	hideAntennas();
 	with(currentAntenna.CLASSES){
 		for (var i = 1; i <= 4; i++){
 			$("#pole"+i).addClass(POLE);
-		}    
+		}
 		$("#antenna").addClass(MAIN); 
 	}
-	$("#antennaSwitch").val("Click to switch to " + ANTENNAS[currentAntenna.NEXT].NAME);
+	$("#antennaSwitch").val("Click to use " + ANTENNAS[currentAntenna.NEXT].NAME);
 }
+
 function hideAntennas(){
 	for (var i = 1; i <= 4; i++){
 		$("#pole"+i).removeClass();
@@ -245,7 +268,7 @@ function setNewAntennaHeight(source){
 		var options = {};
 		options.value = getValidHeight(parseFloat($("#"+source).val()));
 		if (options.value > 0){			
-			ajaxPut('position', options);
+			controllerApiPut('position', options);
 		}
 		else{            
 			$("#"+source).val("");
