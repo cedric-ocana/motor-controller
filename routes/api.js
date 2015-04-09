@@ -329,7 +329,6 @@ router.route('/emergency')
 router.route('/position')
     .put(function(req, res){
         var request = eval(req.body);
-	console.log("Position Request:" + request.toString());
         if (request.value !== undefined){
             hardware.setPosition(null, request.value, function setPositionSender(err, result){
                 generateResponse(null, 'position-set', result, function send(err, data){

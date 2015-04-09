@@ -325,16 +325,12 @@ var CACHED_POSITIONLOOP_ACTIVE = "position-loop";
 var SERVICE_NAME = "HARDWARE-SERVICE";
 var CHANNEL_POSITION_HANDLER = "position-handler";
 
-exports.setPosition = function setPosition(err, position, callback){      
-    client.publish(CHANNEL_POSITION_HANDLER,position,callback);
+exports.setPosition = function setPosition(err, position, callback){   
+	client.publish(CHANNEL_POSITION_HANDLER,position,callback);
 };
 
 function clrPosition(err,callback){
-    client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
-        if (tempTargetPosition !== "-1"){
-            client.publish(CHANNEL_POSITION_HANDLER,-1,callback);    
-        }
-    });
+	client.set(CACHED_TARGET_POSITION, -1, function(){});
 }
 exports.clrPosition = clrPosition;
 
@@ -406,7 +402,6 @@ function monitorStatus(){
 			});
         }
         else{
-            console.log("Monitoring limit switch.");
             isEmergencyOngoing(null, function(err, value){
                 if(value==="1"){
                     dac.reset();
@@ -418,15 +413,69 @@ function monitorStatus(){
 
 function monitorPosition(){
 	getAdcValueInternal(null, function(err, adcValue){
+		var height;
 		with (configuration.adc){
-			client.set(CACHED_CURRENT_POSITION,lmax - adcValue * multiplicator + loffset);
+			height = lmax - adcValue * multiplicator + loffset;		
+		}		
+		client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
+			tools.getFloat(tempTargetPosition, function(err, targetPosition){
+				if (tempTargetPosition>0){
+					var distance = Math.abs(targetPosition-height);
+					var limit = {};       
+					limit.max = targetPosition + configuration.position.tolerance;
+					limit.min = targetPosition - configuration.position.tolerance;
+					if(height > limit.max){
+						console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
+						moveDown(null, distance, function(err){
+							setTimeout(monitorStatus, 200);
+							setTimeout(monitorPosition, 200);
+						});                        
+					}
+					else{
+						if (height < limit.min){
+							console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
+							moveUp(null, distance, function(err){
+								setTimeout(monitorStatus, 200);
+								setTimeout(monitorPosition, 200);								
+							});                             
+						}
+						else{
+							clrDacValueInternal(null,function() {
+								console.log("Target position reached.");
+								clrPosition();		
+								setTimeout(monitorStatus, 200);
+								setTimeout(monitorPosition, 200);								
+							}); 
+						}
+					}
+				}
+				else{
+					with (currentAntenna.RANGE){
+						console.log("CHECKING RANGE!!");
+						dac.isMoovingUp(function(err, isMooving){
+							if (isMooving && (height >= (MAX - TOLERANCE))){
+								client.set(CACHED_TARGET_POSITION,MAX,function(){});
+							}
+						});
+						dac.isMoovingDown(function(err, isMooving){
+							if (isMooving && (height <= (MIN + TOLERANCE))){
+								client.set(CACHED_TARGET_POSITION,MIN,function(){});
+							}
+						});		
+						setTimeout(monitorStatus, 200);
+						setTimeout(monitorPosition, 200);
+					}
+				}
+			});
+		});
+		
+		with (configuration.adc){
+			//client.set(CACHED_CURRENT_POSITION,height);
 		}
 	});
-	monitorStatus();
-	setTimeout(monitorPosition, 100);
+	
+
 }
-
-
 
 service.on("subscribe", function(channel, count){
     console.log(SERVICE_NAME + " subscribed for channel: " + channel);
@@ -437,30 +486,35 @@ service.on("subscribe", function(channel, count){
 
 service.on("message", function(channel, message){        
     if (channel === CHANNEL_POSITION_HANDLER){
-        console.log("Move to: " + message + "cm");  
-        client.set(CACHED_TARGET_POSITION,message, function(err, value){
-            positionLoop(null, "1");
-        }); 
+		tools.getFloat(message, function(err, height){
+			with (currentAntenna.RANGE){
+				if (height > MAX){
+					client.set(CACHED_TARGET_POSITION,MAX, function(){});
+				}
+				else{							
+					if (height < MIN){
+						client.set(CACHED_TARGET_POSITION,MIN, function(){});
+					}
+					else{
+						client.set(CACHED_TARGET_POSITION,message, function(){});
+					}
+				}
+				
+			}
+		});	
     }
+	
     if (channel === tools.CHANNEL_EMERGENCY){
 		if (message === tools.MSG_EMERGENCY_STOP){
 			service.unsubscribe(CHANNEL_POSITION_HANDLER);		    
 		}
 		if (message === tools.MSG_EMERGENCY_RELEASE){
 			service.subscribe(CHANNEL_POSITION_HANDLER);
-			client.get(CACHED_CURRENT_POSITION, function(err, position){
-				client.set(CACHED_TARGET_POSITION,position);
-			});	    
+			clrPosition();			
 		}	
     }
 	if (channel === tools.CHANNEL_HEIGHT){
-		tools.getFloat(message, function(err, value){
-			with (currentAntenna.RANGE){
-				if ((value > (MAX + TOLERANCE)) || (value < (MIN - TOLERANCE))){
-					recoverFromOutOfRange(function(){});		
-				}
-			}
-		});
+		// client notifications to be added here...		
 	}
 });
 
@@ -472,70 +526,69 @@ service.on("unsubscribe", function(channel, count){
 });
 
 
-
-function moveThorwardsPosition(positionReachedCallback){    
-    client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
-	  
-	    tools.getFloat(tempTargetPosition, function(err, targetPosition){
-		getPositionInternal(err, function(err, data){
-		    if (err) throw err;                    
-		    with (data){
-			//console.log("Position loop active" + targetPosition + "Current Position:" + position);
-                        if (targetPosition > 0){
-                            var distance = Math.abs(targetPosition-position);
-                            var limit = {};       
-                            limit.max = targetPosition + configuration.position.tolerance;
-                            limit.min = targetPosition - configuration.position.tolerance;
-                            if(position > limit.max){
-                                console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
-                                moveDown(null, distance, function(err){
-                                    positionReachedCallback(null, 0);
-                                });                        
-                            }
-                            else{
-                                if (position < limit.min){
-                                    console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
-                                    moveUp(null, distance, function(err){
-                                        positionReachedCallback(null, 0);
-                                    });                             
-                                }
-                                else{
-                                    positionReachedCallback(null, 1);
-                                }
-                            }                         
-                        }
-                        else{
-                            positionReachedCallback(null, 1);
-                        } 
-		    }
-		});
-	    });
-    });     
-}
-
+//
+//function moveThorwardsPosition(positionReachedCallback){    
+//    client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){	  
+//	    tools.getFloat(tempTargetPosition, function(err, targetPosition){
+//		getPositionInternal(err, function(err, data){
+//		    if (err) throw err;                    
+//		    with (data){
+//			//console.log("Position loop active" + targetPosition + "Current Position:" + position);
+//                        if (targetPosition > 0){
+//                            var distance = Math.abs(targetPosition-position);
+//                            var limit = {};       
+//                            limit.max = targetPosition + configuration.position.tolerance;
+//                            limit.min = targetPosition - configuration.position.tolerance;
+//                            if(position > limit.max){
+//                                console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
+//                                moveDown(null, distance, function(err){
+//                                    positionReachedCallback(null, 0);
+//                                });                        
+//                            }
+//                            else{
+//                                if (position < limit.min){
+//                                    console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
+//                                    moveUp(null, distance, function(err){
+//                                        positionReachedCallback(null, 0);
+//                                    });                             
+//                                }
+//                                else{
+//                                    positionReachedCallback(null, 1);
+//                                }
+//                            }                         
+//                        }
+//                        else{
+//                            positionReachedCallback(null, 1);
+//                        } 
+//		    }
+//		});
+//	    });
+//    });     
+//}
 
 
-function positionLoop(err, value){
-    if (err) throw err;
-    if (value == "1"){        
-	moveThorwardsPosition(function(err, positionReachedCallback){
-	    if (err) throw err;
-	    if (positionReachedCallback === 1){
-		clrDacValueInternal(null,function() {
-		    console.log("Target position reached.");
-		}); 
-	    }
-	    else{
-		client.get(CACHED_POSITIONLOOP_ACTIVE,positionLoop);
-	    }
-	});
-    }    
-    else{
-        console.log("Position loop stopped");
-        clrDacValueInternal(null,function() {            
-        });        
-    }
-}
+
+//function positionLoop(err, value){
+//    if (err) throw err;
+//    if (value == "1"){        
+//		moveThorwardsPosition(function(err, positionReached){
+//			if (err) throw err;
+//			if (positionReached === 1){
+//			clrDacValueInternal(null,function() {
+//				console.log("Target position reached.");
+//			}); 
+//			}
+//			else{
+//			client.get(CACHED_POSITIONLOOP_ACTIVE,positionLoop);
+//			}
+//		});
+//    }    
+//    else{
+//        console.log("Position loop stopped");
+//        clrDacValueInternal(null,function() {            
+//        });        
+//    }
+//}
 
 exports.setMeasured = function setPosition(err, measuredPosition, callback){     
     getPositionInternal(err,function(err, currentPosition){
@@ -575,8 +628,9 @@ exports.getInputStatus = gpio.getInputStatus;
 
 exports.quit = dac.quit;
 
-function init(){
-    setTimeout(monitorPosition, 2500);
+function init(){		
+	clrPosition();
+    setTimeout(monitorPosition, 100);	
     service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
 	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
     isEmergencyOngoing(null, function(err, emergency){

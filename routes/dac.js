@@ -130,7 +130,7 @@ service.on("message", function(channel, message){
 service.on("unsubscribe", function(channel, count){
     console.log(SERVICE_NAME + " unsubscribed from channel: " + channel);
     if (channel === CHANNEL_DAC_VALUE){
-	internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
+		internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});		
     }
 });
 
@@ -185,9 +185,13 @@ exports.close = function close(){
     service.unsubscribe(CHANNEL_DAC_VALUE);    
 };
 
-exports.getDacValue = function internalGetDacValue(err, callback){
-    client.get(CACHED_VALUE, callback);
+	
+function internalGetDacValue(err, callback){
+    client.get(CACHED_VALUE, function(err, value){
+		tools.getFloat(value, callback);
+	});
 };
+exports.getDacValue = internalGetDacValue;
 
 exports.max = function getMax(){
     return CONFIGURATION.DAC.RANGE.MAX;
@@ -199,4 +203,32 @@ exports.min = function getMin() {
 
 exports.init = function getInit() {
     return CONFIGURATION.DAC.INIT;
+};
+
+
+exports.isMoovingDown = function(callback){
+	internalGetDacValue(null, function(err, dacValue){
+		if(dacValue< CONFIGURATION.DAC.INIT){
+			callback(null, true);
+		}
+		callback(null,false);
+	});
+};
+
+exports.isMoovingUp = function(callback){
+	internalGetDacValue(null, function(err, dacValue){
+		if(dacValue< CONFIGURATION.DAC.INIT){
+			callback(null, true);
+		}
+		callback(null,false);
+	});
+};
+
+exports.isMooving = function(callback){
+	internalGetDacValue(null, function(err, dacValue){
+		if(dacValue == CONFIGURATION.DAC.INIT){
+			callback(null, false);
+		}
+		callback(null, true);
+	});
 };

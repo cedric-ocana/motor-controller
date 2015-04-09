@@ -171,6 +171,7 @@ var intervalDtawStatus;
 
 function init(){
 	hideAntennas();
+	getAntennas();
 	if (typeof $("#manualControllerPad" ).mousemove === "function"){
 		$("#manualControllerPad" ).on('mousemove',function(e){
 			$("#newPosition").val(e.button);
@@ -178,7 +179,7 @@ function init(){
 		});
 	}	
 	clearInterval(intervalInitialization);
-	intervalDtawStatus = setInterval("drawStatus();", 200);
+	intervalDtawStatus = setInterval("drawStatus();", 500);
 }
 
 var intervalInitialization = setInterval("init();",500);
@@ -190,8 +191,7 @@ function getAntennas(){
 }
 
 function drawStatus()
-{	
-	getAntennas();
+{		
     $.ajax({url:'/api/position', type:'GET'}).success(function(msg){		
 		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
 		drawAntennaPosition(parseInt(msg.value));

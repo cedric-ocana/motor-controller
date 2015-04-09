@@ -46,7 +46,7 @@ exports.loadSettings = function loadSettings(identifier, defaultValues, callback
 	fs.exists(identifier, function(exists){
 		if (exists){
 			fs.readFile(identifier, function (err, data) {
-				if (err) throw err;
+				if (err) throw err;				
 				callback(null, JSON.parse(data));
 			});
 		}
