@@ -170,21 +170,28 @@ function decodeMsg(msg)
 var intervalDtawStatus;
 
 function init(){
+	hideAntennas();
 	if (typeof $("#manualControllerPad" ).mousemove === "function"){
 		$("#manualControllerPad" ).on('mousemove',function(e){
 			$("#newPosition").val(e.button);
 			speedControlOnMouseMove(e);
 		});
-	}  
+	}	
 	clearInterval(intervalInitialization);
 	intervalDtawStatus = setInterval("drawStatus();", 200);
 }
 
 var intervalInitialization = setInterval("init();",500);
 
+function getAntennas(){
+	$.ajax({url:'/api/antennas', type:'GET'}).success(function(msg){		
+		ANTENNAS = msg.value;
+	}); 
+}
+
 function drawStatus()
 {	
-  
+	getAntennas();
     $.ajax({url:'/api/position', type:'GET'}).success(function(msg){		
 		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
 		drawAntennaPosition(parseInt(msg.value));
@@ -249,6 +256,7 @@ function drawAntenna(){
 		$("#antenna").addClass(MAIN); 
 	}
 	$("#antennaSwitch").val("Click to use " + ANTENNAS[currentAntenna.NEXT].NAME);
+	$("#range").text("Valid range: " + currentAntenna.RANGE.MIN  + "cm - " + currentAntenna.RANGE.MAX + "cm");
 }
 
 function hideAntennas(){

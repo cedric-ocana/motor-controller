@@ -1,4 +1,4 @@
-body {
+inputboxbody {
   padding: 50px;
   font: 16px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
@@ -11,9 +11,7 @@ a {
 	-khtml-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
-	user-select: none;
-	cursor: pointer;
-	
+	user-select: none;	
 }
 
 
@@ -21,13 +19,14 @@ input {
     padding: 0 0px 0 0px;
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
-    border-radius: 4px;   
+    border-radius: 4px;  
+	cursor: pointer;
 }
 
 div.label {
     display: inline;
-    margin-left: 2px;   
-    height: 100%;    
+	font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    //margin-left: 2px;       
 }
 
 div.status{
@@ -204,10 +203,8 @@ input.inputbox
 div.positionline{
     width:100%;	
     margin-top: 2px;
-    margin-left: 0px;
+    margin-left: 2px;
     margin-top: 5px;
-//    border:1px solid black;
-
     float:left;   
 }
 div.positionblock{

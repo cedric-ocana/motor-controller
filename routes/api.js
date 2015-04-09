@@ -263,7 +263,17 @@ router.route('/antenna/:id?')
         res.json(response);
     }); 	
 
-
+router.route('/antennas')              
+    .get(function(req, res){
+        var routeId = 'antennas-get';        
+		hardware.getAntennas(function getAntennaSender(err, result){
+			generateResponse(null, routeId, result, function send(err, data){
+				data.result = result;
+				res.json(data);
+			});                           
+		});             
+    }); 
+	
 router.route('/speed')
     .get(function(req, res){
         hardware.getSpeed(null, function getSpeedSender(err, result){
@@ -294,7 +304,7 @@ router.route('/speed')
 
 router.route('/emergency')
     .put(function(req, res){
-        hardware.setEmergency();
+        hardware.setEmergency("CLIENT");
         generateResponse(null, 'emergency-put', 0, function send(err, data){
                 data.result = "OK";
                 res.json(data);
