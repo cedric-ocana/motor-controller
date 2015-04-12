@@ -27,7 +27,7 @@ block content
 					input(id='antennaSwitch', type='button', value='Click to use small antenna', onclick='switchAntenna();')
 				div( class="positionline")
 					a:|New height (cm):
-					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "{if(event.keyCode==13)setNewAntennaHeight(this.id)}" )
+					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "keyboardAction(event, this.id)" )
 				div(class="positionline")
 					input(id="emergencyStop", type='button', value="STOP" ,onclick = "emergencyStop();" )
 				div( class="positionline")

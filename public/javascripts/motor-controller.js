@@ -4,7 +4,9 @@ var emergencyDisplayToggler = 0;
 var emergencyPending = FALSE;
 var keypressed = 0;
 var eventHandlerDone = FALSE;
-var previousSpeed = 0;
+var previousSpeedPosition = 0;
+var currentPosition = -1;
+var currentSpeed = 0;
 
 var ANTENNAS={"SMALL":	{	"ID":1,
 							"RANGE":{"MAX":185,"MIN":70},
@@ -58,6 +60,7 @@ function control(parameter) {
 
 function setSpeed(value)
 {	
+	currentSpeed = value;
     var rangeMargin = 4;
     var indicatorHeigth = getHeight("speedindicator");
     var barHeight = getHeight("speedbar");
@@ -142,14 +145,14 @@ function speedControlOnMouseMove(event){
 		speedControl(event.clientY - $("#manualController").position().top);		
 	}
 	else{
-		previousSpeed = event.clientY - $("#manualController").position().top;
+		previousSpeedPosition = event.clientY - $("#manualController").position().top;
 	}
 }
 
 function enableSpeedController(event)
 {	
 	keypressed = 1;
-	speedControl(previousSpeed);
+	speedControl(previousSpeedPosition);
 }
 
 function disableSpeedController()
@@ -192,8 +195,9 @@ function getAntennas(){
 
 function drawStatus()
 {		
-    $.ajax({url:'/api/position', type:'GET'}).success(function(msg){		
-		$("#currentPositionText").val(Math.round(msg.value*100)/100 + "cm");
+    $.ajax({url:'/api/position', type:'GET'}).success(function(msg){
+		currentPosition = Math.round(msg.value*100)/100;
+		$("#currentPositionText").val(Math.round(currentPosition*100)/100 + "cm");
 		drawAntennaPosition(parseInt(msg.value));
 	    });   
 		
@@ -292,7 +296,19 @@ function setNewAntennaHeight(source){
 		}
     }
 }
-
+function setNewAntennaHeightOnValue(value){	
+	disableSpeedController();
+    if (!emergency()){		
+		var options = {};
+		options.value = getValidHeight(parseFloat(value));
+		if (options.value > 0){			
+			controllerApiPut('position', options);
+		}
+		else{            
+			$("#"+source).val("");
+		}
+    }
+}
 
 function emergencyStop(){
     $.ajax({url:'/api/emergency', type:'PUT'}).success(function(){});
@@ -301,3 +317,55 @@ function emergencyRelease(){
     $.ajax({url:'/api/emergency', type:'DELETE'}).success(function(){});
 }
 
+function keyboardAction(event, id){	
+	switch(event.keyCode){
+		case 13:
+			setNewAntennaHeight(id);
+			break;
+		case 33:// Page up
+			$("#"+id).val(currentPosition + 5);
+			setNewAntennaHeight(id);
+			break;
+		case 34:// Page down
+			$("#"+id).val(currentPosition + 5);
+			setNewAntennaHeight(id);
+			break;
+		case 38:// ARROW UP
+			$("#"+id).val(currentPosition + 2);
+			setNewAntennaHeight(id);	
+			break;
+		case 40: // ARROW DOWN
+			$("#"+id).val(currentPosition - 2);
+			setNewAntennaHeight(id);
+			break;
+		case 103: //HOME
+			$("#"+id).val(currentAntenna.RANGE.MAX);
+			setNewAntennaHeight(id);
+			break;
+		case 97: //END
+			$("#"+id).val(currentAntenna.RANGE.MIN);
+			setNewAntennaHeight(id);
+			break;
+		case 107: //ADD
+			accelerate(50);
+			$("#"+id).val(0);
+			break;
+		case 109: //SUBTRACT
+			accelerate(-50);
+			$("#"+id).val(0);
+			break;
+		case 46:
+		case 27:
+			$("#"+id).val(0);
+			setSpeed(0);
+			break;
+		default:
+			alert("key not set:" + event.keyCode);
+	}
+}
+
+function accelerate(value){
+	currentSpeed += value/2068;
+	setSpeed(currentSpeed);
+		
+}
