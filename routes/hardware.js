@@ -371,9 +371,9 @@ function getPositionInternal(err, callback){
 
 function recoverFromOutOfRange(callback){ 
 	client.get(CACHED_CURRENT_POSITION,function(err, value){
-		var speed = configuration.speed.down.normal.speed;
-		if(value <= 135){		   
-			speed  = configuration.speed.up.normal.speed;	
+		var speed = configuration.speed.up.normal.speed;
+		if(value >= 135){		   
+			speed  = configuration.speed.down.normal.speed;	
 			if (emulatorActive()){       
 				configuration.adc.value = configuration.adc.value - 20;
 			}			
@@ -383,23 +383,27 @@ function recoverFromOutOfRange(callback){
 				configuration.adc.value = configuration.adc.value + 20;
 			}
 		}
+
 		console.log("Recovering from out of range. DAC:" + speed);
 		gpio.clrLimitoverride(function(err, status){
                 setTimeout(function(){               	    
-					dac.lowLevelDriverNoProtectionSetValue(null, speed);		    
+					dac.lowLevelDriverNoProtectionSetValue(null, speed);		    						
 					gpio.setLimitoverride(function(){});
-                    setEmergency("LIMITSWITCH");
-                    callback();
-                },500);			
+                    setTimeout(function(){
+			callback();
+		    },100);	
+                },800);			
 		});
 	});
 }
 
-function monitorStatus(){   
+function monitorStatus(callback){   
     gpio.getLimitswitch(function(err, limitSwitch){
         if (limitSwitch == 0){	            
             recoverFromOutOfRange(function(){				
-			});
+                setEmergency("LIMITSWITCH");
+		callback();
+		});
         }
         else{
             isEmergencyOngoing(null, function(err, value){
@@ -407,6 +411,7 @@ function monitorStatus(){
                     dac.reset();
                 }
             });
+		callback();
         }           
     });        
 }
@@ -427,24 +432,21 @@ function monitorPosition(){
 					if(height > limit.max){
 						console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
 						moveDown(null, distance, function(err){
-							setTimeout(monitorStatus, 200);
-							setTimeout(monitorPosition, 200);
+//							setTimeout(monitorPosition, 200);
 						});                        
 					}
 					else{
 						if (height < limit.min){
 							console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
 							moveUp(null, distance, function(err){
-								setTimeout(monitorStatus, 200);
-								setTimeout(monitorPosition, 200);								
+//								setTimeout(monitorPosition, 200);								
 							});                             
 						}
 						else{
 							clrDacValueInternal(null,function() {
 								console.log("Target position reached.");
 								clrPosition();		
-								setTimeout(monitorStatus, 200);
-								setTimeout(monitorPosition, 200);								
+//								setTimeout(monitorPosition, 200);								
 							}); 
 						}
 					}
@@ -462,19 +464,16 @@ function monitorPosition(){
 								client.set(CACHED_TARGET_POSITION,MIN,function(){});
 							}
 						});		
-						setTimeout(monitorStatus, 200);
-						setTimeout(monitorPosition, 200);
 					}
 				}
 			});
 		});
 		
-		with (configuration.adc){
-			//client.set(CACHED_CURRENT_POSITION,height);
-		}
+		client.set(CACHED_CURRENT_POSITION,height);
 	});
-	
-
+	monitorStatus(function(){
+		setTimeout(monitorPosition, 200);
+	});
 }
 
 service.on("subscribe", function(channel, count){
@@ -629,8 +628,9 @@ exports.getInputStatus = gpio.getInputStatus;
 exports.quit = dac.quit;
 
 function init(){		
-	clrPosition();
+    clrPosition();
     setTimeout(monitorPosition, 100);	
+//    setTimeout(monitorStatus, 100);
     service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
 	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
     isEmergencyOngoing(null, function(err, emergency){

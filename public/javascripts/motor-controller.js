@@ -338,11 +338,11 @@ function keyboardAction(event, id){
 			$("#"+id).val(currentPosition - 2);
 			setNewAntennaHeight(id);
 			break;
-		case 103: //HOME
+		case 36: //HOME
 			$("#"+id).val(currentAntenna.RANGE.MAX);
 			setNewAntennaHeight(id);
 			break;
-		case 97: //END
+		case 35: //END
 			$("#"+id).val(currentAntenna.RANGE.MIN);
 			setNewAntennaHeight(id);
 			break;
@@ -356,9 +356,11 @@ function keyboardAction(event, id){
 			break;
 		case 46:
 		case 27:
-			$("#"+id).val(0);
+//			$("#"+id).val(0);
 			setSpeed(0);
 			break;
+//		default:
+//			alert(event.keyCode);
 	}
 }
 
