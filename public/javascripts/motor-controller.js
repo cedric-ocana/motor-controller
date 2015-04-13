@@ -327,7 +327,7 @@ function keyboardAction(event, id){
 			setNewAntennaHeight(id);
 			break;
 		case 34:// Page down
-			$("#"+id).val(currentPosition + 5);
+			$("#"+id).val(currentPosition - 5);
 			setNewAntennaHeight(id);
 			break;
 		case 38:// ARROW UP
