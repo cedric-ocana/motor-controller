@@ -359,8 +359,6 @@ function keyboardAction(event, id){
 			$("#"+id).val(0);
 			setSpeed(0);
 			break;
-		default:
-			alert("key not set:" + event.keyCode);
 	}
 }
 
