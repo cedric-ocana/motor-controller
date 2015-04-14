@@ -183,6 +183,10 @@ function init(){
 	}	
 	clearInterval(intervalInitialization);
 	intervalDtawStatus = setInterval("drawStatus();", 500);
+	$("body").keyup(function(event){		
+		keyboardAction(event);
+	});
+
 }
 
 var intervalInitialization = setInterval("init();",500);
@@ -316,52 +320,63 @@ function emergencyStop(){
 function emergencyRelease(){
     $.ajax({url:'/api/emergency', type:'DELETE'}).success(function(){});
 }
-
-function keyboardAction(event, id){	
+function setNewHeight(heigth){
+	var id = "newPosition";	
+	$("#" + id).val(heigth);	
+	setNewAntennaHeight(id);
+}
+function keyboardAction(event){			
 	switch(event.keyCode){
 		case 13:
-			setNewAntennaHeight(id);
+			if (event.target.id === "newPosition"){
+				setNewAntennaHeight(event.target.id);
+			}			
+			$("#newPosition").focus();
 			break;
 		case 33:// Page up
-			$("#"+id).val(currentPosition + 5);
-			setNewAntennaHeight(id);
+			setNewHeight(currentPosition + 5);
+			$("#newPosition").focus();
 			break;
 		case 34:// Page down
-			$("#"+id).val(currentPosition - 5);
-			setNewAntennaHeight(id);
+			setNewHeight(currentPosition - 5);
+			$("#newPosition").focus();
 			break;
 		case 38:// ARROW UP
-			$("#"+id).val(currentPosition + 2);
-			setNewAntennaHeight(id);	
+			setNewHeight(currentPosition + 2);
+			$("#newPosition").focus();
 			break;
 		case 40: // ARROW DOWN
-			$("#"+id).val(currentPosition - 2);
-			setNewAntennaHeight(id);
+			setNewHeight(currentPosition - 2);
+			$("#newPosition").focus();
 			break;
 		case 36: //HOME
-			$("#"+id).val(currentAntenna.RANGE.MAX);
-			setNewAntennaHeight(id);
+			setNewHeight(currentAntenna.RANGE.MAX);
+			$("#newPosition").focus();
 			break;
 		case 35: //END
-			$("#"+id).val(currentAntenna.RANGE.MIN);
-			setNewAntennaHeight(id);
+			setNewHeight(currentAntenna.RANGE.MIN);
+			$("#newPosition").focus();
 			break;
 		case 107: //ADD
 			accelerate(50);
-			$("#"+id).val(0);
+			$("#" + event.target.id).val(0);
+			$("#newPosition").focus();
 			break;
 		case 109: //SUBTRACT
-			accelerate(-50);
-			$("#"+id).val(0);
+			accelerate(-50);			
+			$("#" + event.target.id).val(0);
+			$("#newPosition").focus();
 			break;
 		case 46:
 		case 27:
-//			$("#"+id).val(0);
-			setSpeed(0);
+//			$(defaultNewPositonField).val(0);
+			setSpeed(0);		
+			$("#newPosition").val(currentPosition);
+			$("#newPosition").focus();
 			break;
-//		default:
+		default:
 //			alert(event.keyCode);
-	}
+	}	
 }
 
 function accelerate(value){
