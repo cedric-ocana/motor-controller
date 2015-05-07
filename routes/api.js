@@ -243,8 +243,8 @@ router.route('/antenna/:id?')
 		});             
     })    
 	.put(function(req, res){ 
-        var routeId = 'antenna-put';
-        var request = req.params;  		
+	        var routeId = 'antenna-put';
+	        var request = req.params;  		
 		if (request.hasOwnProperty("id")){
 			hardware.setAntenna(null, request.id, function setAntennaSender(err, result){
 				generateResponse(null, routeId, result, function send(err, data){
@@ -253,14 +253,15 @@ router.route('/antenna/:id?')
 				});                           
 			});			
 		}
-        else{
-            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), routeId, {}, function send(err, data){
-                res.json(data);
-            });                       	
-        } 		
-        var response = getResponseMessageOK("motordriver");       	
-        hardware.enableMotor(onErrorThrowIt);
-        res.json(response);
+        	else{
+	            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), routeId, {}, function send(err, data){
+        	        res.json(data);
+	            });                       	
+        	} 		
+// =============== SMALL ANTENNA BUG ===========
+//        var response = getResponseMessageOK("motordriver");       	
+//        hardware.enableMotor(onErrorThrowIt);
+//        res.json(response);
     }); 	
 
 router.route('/antennas')              

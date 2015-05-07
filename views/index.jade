@@ -34,7 +34,7 @@ block content
 					input(id="emergencyRelease", type='button', value="RECOVER FROM EMERGENCY" ,onclick = "emergencyRelease();" )
 				div( class="positionline")
 					a:|Measured height (cm):
-					input(class='inputbox', placeholder='0', id='currentPosition' ,onkeyup = "{if(event.keyCode==13)setMeasuredPosition(this.id)}" )
+					input(class='inputbox', placeholder='0', id='currentPosition',  onclick="alert('Warning this is the calibration setting!')" ,onkeyup = "{if(event.keyCode==13)setMeasuredPosition(this.id)}" )
 				div(class="positionline")
 					a(id="range"):|valid range ??cm - ??cm
 			div(id="fixation", class="antennafixation")

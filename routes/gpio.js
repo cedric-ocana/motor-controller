@@ -53,13 +53,18 @@ var internalGetStatus = function(name, callback){
         }
     };
 
-
+var internalInit = function(err, callback){
+   if(err){
+	callback(err);
+   }
+   console.log("GPIO-Initialization");
+}
 
 // Check operating system and load SPI interface if linux is detected.
 if (tools.hardwareAvailable())
 {
     var gpio = require('pi-gpio');
-    function openGpio(name){
+    function openGpio(name, callback){
         if (CONFIGURATION.hasOwnProperty(name)){
             var io = CONFIGURATION[name];
             console.log("OPENING IO: " + name);
@@ -74,20 +79,45 @@ if (tools.hardwareAvailable())
                             }
                             else{
                                 console.log("GPIO OPENED: " + io.PIN + " [" + name +"]");
+				callback(null);
                             }
                         });
                     }
                     else{
                         console.log("GPIO OPENED: " + io.PIN + " [" + name +"]");
+			callback(null);
                     }
                 });                
             }
+	    else{
+		callback(null);
+	    }
         }
+	else{
+		callback(null);
+	}
     }
-    for (var io in CONFIGURATION){
-        openGpio(io);
+
+    internalInit = function gpioInit(err, callback){
+	if(err){
+	    callback(err);
+	}
+	else{
+ 	    openGpio("LIMITOVERRIDE",function(err){
+		openGpio("MOTORDRIVER",function(err){
+			openGpio("STATUS_LIMIT",function(err){
+				openGpio("STATUS_5V_FIBER",function(err){
+					openGpio("STATUS_15V_NEGATIVE",function(err){
+						openGpio("STATUS_15V_POSITIVE",function(err){
+							callback(err);
+						});				
+					});				
+				});
+			});
+		});
+   	    });
+	}        
     }
-        
     
     function setGpio(pin,value, callback){
         gpio.write(pin, value, function() {  
@@ -100,7 +130,9 @@ if (tools.hardwareAvailable())
             if (err) throw err;
             callback(err, res);
         });        
-    }        
+    }    
+
+    
     internalSetLimitoverride = function(callback)
     {
         setGpio(CONFIGURATION.LIMITOVERRIDE.PIN,CONFIGURATION.LIMITOVERRIDE.SET, callback);
@@ -141,6 +173,7 @@ if (tools.hardwareAvailable())
     };
 }
 
+exports.init = internalInit;
 exports.clrLimitoverride = internalClrLimitoverride;
 exports.setLimitoverride = internalSetLimitoverride;
 

@@ -105,7 +105,7 @@ var configuration = {"mode":mode,
                             },
                             "slow": {
                                 "distance": 1,
-                                "speed": 1500
+                                "speed": 1218
                             }
                         },
                         "down": {
@@ -399,7 +399,10 @@ function recoverFromOutOfRange(callback){
 
 function monitorStatus(callback){   
     gpio.getLimitswitch(function(err, limitSwitch){
+	if (err) throw err;
         if (limitSwitch == 0){	            
+//	    console.log("LIMIT!:" + limitSwitch + "<->0" );
+
             recoverFromOutOfRange(function(){				
                 setEmergency("LIMITSWITCH");
 		callback();
@@ -592,10 +595,19 @@ service.on("unsubscribe", function(channel, count){
 exports.setMeasured = function setPosition(err, measuredPosition, callback){     
     getPositionInternal(err,function(err, currentPosition){
         var potiPosition = currentPosition.position - configuration.adc.loffset;
-        configuration.adc.loffset = measuredPosition - potiPosition;
-        console.log("New Offset:" + configuration.adc.loffset);
-        callback(null, configuration.adc.loffset );
+	var newOffset = measuredPosition - potiPosition;
+	var delta = configuration.adc.loffset - newOffset;
+	console.log("Delta: " + delta);
+	if((delta < 5) && (delta > -5)){
+	        configuration.adc.loffset = measuredPosition - potiPosition;
+        	console.log("New Offset:" + configuration.adc.loffset);
+	        callback(null, configuration.adc.loffset );
 		tools.saveSettings("config.hw", configuration);
+	}
+	else{
+        	console.log("Delta for new Offset not OK! Delta:" + delta);
+	        callback(null, "Delta for new Offest not OK! Delta:");
+	}
     });
 };
 
@@ -610,6 +622,7 @@ function setAntenna(err, newAntenna, callback){
 	if (ANTENNAS.hasOwnProperty(newAntenna)){
 		currentAntenna = ANTENNAS[newAntenna];
 	}
+
 	callback(null,currentAntenna.ID);
 	
 }
@@ -628,18 +641,22 @@ exports.getInputStatus = gpio.getInputStatus;
 exports.quit = dac.quit;
 
 function init(){		
-    clrPosition();
-    setTimeout(monitorPosition, 100);	
+    gpio.init(null,function(err){
+	if(err) throw err;
+	clrPosition();
+	setTimeout(monitorPosition, 1000);	
 //    setTimeout(monitorStatus, 100);
-    service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
+	service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
 	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
-    isEmergencyOngoing(null, function(err, emergency){
-        if (emergency === "0"){          
-            service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
-        }
-        else{			
-            setEmergency("INIT");
-        }
-    });    
+        isEmergencyOngoing(null, function(err, emergency){
+    	    if (emergency === "0"){          
+        	    service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
+	    }
+	    else{
+		clrEmergency();			
+//                setEmergency("INIT");
+            }
+        });    
+    });
 }
 init();
