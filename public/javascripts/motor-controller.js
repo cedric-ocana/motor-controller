@@ -7,6 +7,7 @@ var eventHandlerDone = FALSE;
 var previousSpeedPosition = 0;
 var currentPosition = -1;
 var currentSpeed = 0;
+var speedSlow = FALSE;
 
 var ANTENNAS={"SMALL":	{	"ID":1,
 							"RANGE":{"MAX":185,"MIN":70},
@@ -42,6 +43,7 @@ function getHeight(elementName)
 {
 	return parseInt($("#"+ elementName).css("height"));
 }
+
 
 function control(parameter) {
     if (emergency() === FALSE){
@@ -213,6 +215,20 @@ function drawStatus()
 				
 			}
 	    }); 		
+    $.ajax({url:'/api/speed/slow', type:'GET'}).success(function(msg){
+                        //alert(msg.value.slow);
+                        if((msg.value.slow == FALSE) || (msg.value.slow == TRUE)){
+				if(msg.value.slow == "1"){
+					speedSlow = TRUE;
+					$("#speedSwitch").val("Click to move faster");
+				}
+				else{
+					speedSlow = FALSE;
+					$("#speedSwitch").val("Click to move slower");
+				}
+                        }
+            });
+
     $.ajax({url:'/api/emergency', type:'GET'}).success(function(msg){	
 		if (msg.value === "1" && emergencyPending === FALSE){
 			emergencyPending = TRUE;
@@ -255,6 +271,16 @@ function drawClearEmergency(){
 function switchAntenna(){	
 	$.ajax({url:'/api/antenna/'+currentAntenna.NEXT, type:'PUT'}).success(function(){});
 }
+
+function toggleSlowSpeed(){
+	if(speedSlow === TRUE){
+	        $.ajax({url:'/api/speed/slow', type:'DELETE'}).success(function(){});
+	}
+	else{
+	        $.ajax({url:'/api/speed/slow', type:'PUT'}).success(function(){});
+	}
+}
+
 function drawAntenna(){
 	hideAntennas();
 	with(currentAntenna.CLASSES){

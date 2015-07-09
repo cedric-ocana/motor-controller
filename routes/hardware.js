@@ -82,7 +82,7 @@ var configuration = {"mode":mode,
                         * offset:= The offset between measured and calculated values                
                         */
                         "multiplicator":0.0052729034423828125,
-                        "loffset": -134.485132598877,
+                        "loffset": -127.8700631713867,
                         "lmax":500,
                         "lfixation":32,
                         "lweel":49
@@ -93,6 +93,7 @@ var configuration = {"mode":mode,
                         "tolerance":0.05
                     }, //32768
                     "speed":{
+			"goSlow":0,
                         "zero":getSpeed(0.00), //OK this value comes from a i7...
                         "up": {
                             "fast": {
@@ -295,11 +296,11 @@ exports.getSpeed = internalGetSpeed;
 
 function move(err, distance, settings, callback){
     //changeSpeed(settings.slow.speed, callback);
-    if (distance <= settings.slow.distance) {
+    if ((distance <= settings.slow.distance)) {
         changeSpeed(settings.slow.speed, callback);
     }
     else{
-        if (distance <= settings.normal.distance) {
+        if ((distance <= settings.normal.distance) || (configuration.speed.goSlow === 1)) {
             changeSpeed(settings.normal.speed, callback);
         }
         else{           
@@ -630,6 +631,25 @@ exports.getAntenna = getAntenna;
 exports.setAntenna = setAntenna;
 exports.getPosition = getPositionInternal;
 
+function setSlow(err, setSlow, callback){
+	if(err) throw err;
+	if(setSlow == "1"){
+		configuration.speed.goSlow = 1;
+	}
+	else{
+		configuration.speed.goSlow = 0;
+	}
+	callback(null);
+}
+
+function getSlow(err, callback){
+	result={};
+	result.slow = configuration.speed.goSlow;
+	callback(err, result);
+}
+
+exports.setSlow =  setSlow;
+exports.getSlow =  getSlow;
 
 exports.enableMotor =  gpio.enableDriver;
 exports.disableMotor =  gpio.disableDriver;

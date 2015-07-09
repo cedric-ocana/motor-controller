@@ -26,6 +26,8 @@ block content
 				div( class="positionline")
 					input(id='antennaSwitch', type='button', value='Click to use small antenna', onclick='switchAntenna();')
 				div( class="positionline")
+					input(id='speedSwitch', type='button', value='Click to move slowly the antenna', onclick='toggleSlowSpeed();')
+				div( class="positionline")
 					a:|New height (cm):
 					input(class='inputbox', placeholder='0', id='newPosition', autofocus='autofocus' ,onkeyup = "keyboardAction(event, this.id)" )
 				div(class="positionline")
@@ -37,6 +39,7 @@ block content
 					input(class='inputbox', placeholder='0', id='currentPosition',  onclick="alert('Warning this is the calibration setting!')" ,onkeyup = "{if(event.keyCode==13)setMeasuredPosition(this.id)}" )
 				div(class="positionline")
 					a(id="range"):|valid range ??cm - ??cm
+
 			div(id="fixation", class="antennafixation")
 				input(id='currentPositionText' )
 			div(id="mastbar")

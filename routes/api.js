@@ -275,6 +275,33 @@ router.route('/antennas')
 		});             
     }); 
 	
+router.route('/speed/slow')
+    .get(function(req, res){
+        hardware.getSlow(null, function getSpeedSlowSender(err, result){
+            generateResponse(null, 'speed-get-slow', result, function send(err, data){               
+                res.json(data);
+            });                           
+        });
+    })
+    .put(function (req, res) {
+	hardware.setSlow(null, 1, function checkIfSet(err){
+	        hardware.getSlow(null, function getSpeedSlowSender(err, result){
+	            generateResponse(null, 'speed-set-slow', result, function send(err, data){
+	                res.json(data);
+	            });
+		});
+        });
+    })
+    .delete(function (req, res) {
+        hardware.setSlow(null, 0, function checkIfSet(err){
+                hardware.getSlow(null, function getSpeedSlowSender(err, result){
+                    generateResponse(null, 'speed-clr-slow', result, function send(err, data){
+                        res.json(data);
+                    });
+                });
+        });
+    });
+
 router.route('/speed')
     .get(function(req, res){
         hardware.getSpeed(null, function getSpeedSender(err, result){
@@ -292,14 +319,24 @@ router.route('/speed')
         });
     })
     .put(function (req, res) {
-        var request = eval(req.body);	    
-        setIntFromRequest(request.value, function(err, value){
-            hardware.setSpeed(err, value, function setSpeedSender(err2) {
-                generateResponse(err2, 'speed-put',value, function send(err, data) {           
-                    res.json(data);
-                });
-            });
-        }); 
+        var request = eval(req.body);
+        if (request.value !== undefined){	    
+	        setIntFromRequest(request.value, function(err, value){
+        	    hardware.setSpeed(err, value, function setSpeedSender(err2) {
+                	generateResponse(err2, 'speed-put',value, function send(err, data) {           
+	                    res.json(data);
+	                });
+	            });
+	        }); 
+	}
+	else{
+	        hardware.getSpeed(null, function getSpeedSender(err, result){
+	            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), 'speed-get', (result.du / result.dt), function send(err, data){
+	                data.result = result;
+	                res.json(data);
+	            });
+	        });
+        }
     });
 
 
@@ -320,7 +357,7 @@ router.route('/emergency')
     })
     .get(function(req, res){     
         hardware.isEmergencyOngoing(null, function getPositionSender(err, result){
-            generateResponse(err, 'emergency-get', result, function send(err, data){
+            generateResponse(null, 'emergency-get', result, function send(err, data){
                 data.data = result;
                 res.json(data);
             });                           
