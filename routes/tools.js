@@ -13,16 +13,17 @@ exports.MSG_EMERGENCY_RELEASE = "emergency-release";
 exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";
 
 exports.hardwareAvailable = function hardwareAvailable() {
-    if (os.hostname() === 'mk-mast1')
+    if (os.hostname() === 'mk-mast1') 
     {
         return true;
     }
-    else
+    if (os.hostname() === 'MK_I00S02_MAT')
     {
-        console.log("NOT PI! But:" + os.hostname() );
-        return false;
+        return true;
     }
-   
+    
+    console.log("NOT PI! But:" + os.hostname() );
+    return false;       
 };
 
 
