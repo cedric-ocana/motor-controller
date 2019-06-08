@@ -168,11 +168,19 @@ function emulatorActive(){
  */
 exports.emulatorActive = emulatorActive();
 
+/**
+ * Exposes the mode
+ */
 exports.getMode = function getMode(err){
     if (err) throw err; 
     return configuration.mode;
 };
 
+/**
+ * Exposes the set mode possiblity 
+ * @param newMode - Only "emulator" can set the emulator mode. Any other value
+ * enables the normal mode.
+ */
 exports.setMode = function setMode(err, newMode) {
     if (err) throw err; 
     if (newMode==="emulator")
@@ -185,6 +193,7 @@ exports.setMode = function setMode(err, newMode) {
     }
     console.log("New mode: " + configuration.mode);
 };
+
 /*TODO 
  * On a resetMode call the mode should match the capabilties of the server environment.
  * If possible then set to real mode if not continue with the emulatrion.
