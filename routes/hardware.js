@@ -168,25 +168,6 @@ function emulatorActive(){
  */
 exports.emulatorActive = emulatorActive();
 
-/**
- * Deprecated 
-function dispatcher(callbackToNonEmulatedFunction, callbackToEmulatedFunction)
-{
-    try{
-        if (emulatorActive())
-            return callbackToEmulatedFunction();
-        else
-            return callbackToNonEmulatedFunction();
-    }catch (exeption)
-    {
-        console.log("Dispatching error. Emulator callback is ["  +
-                typeof(callbackToEmulatedFunction) + 
-                "] Real callback is [" + 
-                typeof(callbackToNonEmulatedFunction) +"]");        
-        return undefined;
-    }
-}
-*/
 exports.getMode = function getMode(err){
     if (err) throw err; 
     return configuration.mode;
