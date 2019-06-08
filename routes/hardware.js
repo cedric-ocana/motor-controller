@@ -1,35 +1,56 @@
 /*
- *
- * Configuration of the hardware module.
- * As there is only one Hardware this configuration is valid for all clients.
- * This file does also covers some processing to monitor the height and the limit switches.
+ * @file This file represents a basic hardware abstraction layer (HAL).
+ * @author Cedric Ocaña, BAKOM, 2012 - 2019, +41 79 443 36 03
  */
 
+/**
+ * @dependencies Inclusion of all dpendencies in order to be able to interact with
+ *  the hardware
+ */
 var dac = require('./dac.js');
 var gpio = require('./gpio.js');
 var adc = require('./adc.js');
 var tools = require('./tools.js');
+/**
+ * @dependencies Inclusion and setup of redis environemes to manage the status
+ */
 var redis = require('redis');
 var redis = require('redis');
 var service = redis.createClient();
 var client = redis.createClient();
 
 client.on("error", function (err) {
-    console.log("Redis DAC-Client error\n" + err);    
+    console.log("Redis DAC-Client error\n" + err);
 });
 
+
+/**
+ * Default mode is the emulation mode.
+ */
 var mode = "emulator";
 if (tools.hardwareAvailable())
 {
     mode = "real";
 }
+/**
+ * Acceleration courve table to manage speed of mast.
+ * Not needed anymore in current version.
+ */
 var acceleration = [0.001,0.004,0.009,0.016,0.024,0.035,0.048,0.062,0.078,0.095,0.115,0.136,0.158,0.181,0.206,0.232,0.259,0.287,0.316,0.345,0.376,0.406,0.437,0.469,0.5,0.531,0.563,0.594,0.624,0.655,0.684,0.713,0.741,0.768,0.794,0.819,0.842,0.864,0.885,0.905,0.922,0.938,0.952,0.965,0.976,0.984,0.991,0.996,0.999,1];
 var deceleration = [0.999,0.996,0.991,0.984,0.976,0.965,0.952,0.938,0.922,0.905,0.885,0.864,0.842,0.819,0.794,0.768,0.741,0.713,0.684,0.655,0.624,0.594,0.563,0.531,0.5,0.469,0.437,0.406,0.376,0.345,0.316,0.287,0.259,0.232,0.206,0.181,0.158,0.136,0.115,0.095,0.078,0.062,0.048,0.035,0.024,0.016,0.009,0.004,0.001,0];
 
+/**
+ * Very generic & basic speed calculation. At the beginning the accelleration
+ * was ment to be dynamic in order to speed up and down the movement slowly.
+ */
 function getSpeed(signedRatio){
     return dac.init() + dac.init() * signedRatio;
 }
 
+/**
+ * Definiton of the antenna types that are available for the mast.
+ * Allows a flexible asignation of antennas and the related dimensions.
+ */
 var ANTENNAS={	"SMALL":{"ID":"SMALL",
 			"RANGE":{"MAX":180,"MIN":67.0, "TOLERANCE":0.2},
 			"NAME":"small antenna",
@@ -46,14 +67,21 @@ var ANTENNAS={	"SMALL":{"ID":"SMALL",
 				},
 				"NEXT":"SMALL"
 			}};
-
+/**
+ * Default statup antenna. The safest way is to select the BIG one
+ */
 var currentAntenna = ANTENNAS.BIG;
 
+/**
+ * Exposes the available antennas
+ */
 exports.getAntennas = function(callback){
 	callback(null, ANTENNAS);
 };
 
-
+/**
+ * Configuraton of the whole mast controller
+ */
 var configuration = {"mode":mode,
                      "status":-1,
                     "dac":{"value":0},
@@ -114,26 +142,34 @@ var configuration = {"mode":mode,
                                 "distance": 1,
                                 "speed": 2300
                             }
-                        },                                               
+                        },
                         "tsampling":100,
                         "dtDeceleration":1,
-                        "dtAcceleration": 1                        
-                        }                                  
+                        "dtAcceleration": 1
+                        }
                     };
-					
+
+/**
+ * Load the configuration for each startup of the mast. The settings for the mast
+ * need to be changed in the /config.hw. 
+ */
 tools.loadSettings("config.hw",configuration, function(err, newSettings){
 	configuration = newSettings;
-});                    
-                    
-var previousCall = function(){};               
+});
 
-
+/**
+ * Checkes if the emulator mode is active
+ */
 function emulatorActive(){
-    return configuration.mode === "emulator";    
+    return (configuration.mode === "emulator");    
 }
-
+/**
+ * Exposes if the emulator mode is active
+ */
 exports.emulatorActive = emulatorActive();
 
+/**
+ * Deprecated 
 function dispatcher(callbackToNonEmulatedFunction, callbackToEmulatedFunction)
 {
     try{
@@ -141,9 +177,8 @@ function dispatcher(callbackToNonEmulatedFunction, callbackToEmulatedFunction)
             return callbackToEmulatedFunction();
         else
             return callbackToNonEmulatedFunction();
-            
     }catch (exeption)
-    {        
+    {
         console.log("Dispatching error. Emulator callback is ["  +
                 typeof(callbackToEmulatedFunction) + 
                 "] Real callback is [" + 
@@ -151,7 +186,7 @@ function dispatcher(callbackToNonEmulatedFunction, callbackToEmulatedFunction)
         return undefined;
     }
 }
-
+*/
 exports.getMode = function getMode(err){
     if (err) throw err; 
     return configuration.mode;
