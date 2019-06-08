@@ -190,7 +190,7 @@ input.inputbox
 }
 #positionIdicator
 {
-    height: 336px;
+    height: 400px;
     width:350px;
     background-color:beige;
     border:4px solid green;
@@ -375,3 +375,17 @@ div.bigAntenna {
 	border-radius: 3px;	
 	font-weight: bold;
 }
+
+#powerOff
+{
+        width:100%;
+        height: 45px;
+        border:1px solid black;
+        background-color: red;
+        -webkit-border-radius: 3px;
+        -moz-border-radius: 3px;
+        border-radius: 3px;
+        font-weight: bold;
+}
+
+

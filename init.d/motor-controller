@@ -16,7 +16,7 @@ DESC="node motor controller service"
 NODEUSER=root:root      
 LOCAL_VAR_RUN=/var/run
 NAME=node
-DAEMON=/usr/local/bin/$NAME
+DAEMON=/usr/bin/$NAME
 LOGFILE=/var/log/motor-controller.log
 
 # Do NOT "set -e"
@@ -52,6 +52,7 @@ do_start()
 {
 # First action that should be done is to turn off the motor driver.
 # This avoids any strange behaviour if the service was killed
+/opt/motor-controller/init.d/setupGPIOS
 echo "in" > /sys/class/gpio/gpio24/direction
 # Return
 # 0 if daemon has been started

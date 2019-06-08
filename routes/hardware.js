@@ -1,13 +1,8 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/*
- * 
+ *
  * Configuration of the hardware module.
- * As there is only one Hardware this configuration is valid for all clients. 
+ * As there is only one Hardware this configuration is valid for all clients.
+ * This file does also covers some processing to monitor the height and the limit switches.
  */
 
 var dac = require('./dac.js');
@@ -23,10 +18,6 @@ client.on("error", function (err) {
     console.log("Redis DAC-Client error\n" + err);    
 });
 
-
-
-
-
 var mode = "emulator";
 if (tools.hardwareAvailable())
 {
@@ -39,23 +30,23 @@ function getSpeed(signedRatio){
     return dac.init() + dac.init() * signedRatio;
 }
 
-var ANTENNAS={"SMALL":	{	"ID":"SMALL",
-							"RANGE":{"MAX":185,"MIN":70, "TOLERANCE":0.2},
-							"NAME":"small antenna",
-							"CLASSES":{	"POLE":"smallAntennadiv",
-										"MAIN":"smallAntenna"
-							},
-							"NEXT":"BIG"
-						},
-			  "BIG":	{	"ID":"BIG",
-							"RANGE":{"MAX":175,"MIN":90, "TOLERANCE":0.2},
-							"NAME":"big antenna",
-							"CLASSES":{	"POLE":"bigAntennadiv",
-										"MAIN":"bigAntenna"
-							},
-							"NEXT":"SMALL"						
-						}
-			 };	
+var ANTENNAS={	"SMALL":{"ID":"SMALL",
+			"RANGE":{"MAX":180,"MIN":67.0, "TOLERANCE":0.2},
+			"NAME":"small antenna",
+			"CLASSES":{"POLE":"smallAntennadiv",
+				"MAIN":"smallAntenna"
+				},
+				"NEXT":"BIG"
+			},
+		"BIG":{"ID":"BIG",
+			"RANGE":{"MAX":170,"MIN":90, "TOLERANCE":0.2},
+			"NAME":"big antenna",
+			"CLASSES":{"POLE":"bigAntennadiv",
+				"MAIN":"bigAntenna"
+				},
+				"NEXT":"SMALL"
+			}};
+
 var currentAntenna = ANTENNAS.BIG;
 
 exports.getAntennas = function(callback){
@@ -66,6 +57,7 @@ exports.getAntennas = function(callback){
 var configuration = {"mode":mode,
                      "status":-1,
                     "dac":{"value":0},
+			"adc2":2,
                     "adc":{
                         "value":43500,
                        /* Basic formula is:
@@ -188,24 +180,44 @@ exports.resetMode = function resetMode(err){
 };
 
 function getAdcValueInternal(err, callback){
-    if (err) throw err;     
+    if (err) throw err;
     if (callback === null){
         if(!emulatorActive()){
             configuration.adc.value = adc.getValue();
         }
+	return configuration.adc.value;
     }
     else{
-        if (emulatorActive()) {           
+        if (emulatorActive()) {
             callback(null, configuration.adc.value);
         }
         else{
             adc.getAdcValue(null, callback);
         }
     }
-    return configuration.adc.value;
 }
 
 exports.getAdcValue = getAdcValueInternal;
+
+function getAdc2ValueInternal(err, callback){
+    if (err) throw err;
+    if (callback === null){
+        if(!emulatorActive()){
+            configuration.adc2.value = adc.get2Value();
+        }
+	return configuration.adc2.value;
+    }
+    else{
+        if (emulatorActive()) {
+            callback(null, configuration.adc2.value);
+        }
+        else{
+            adc.getAdc2Value(null, callback);
+        }
+    }
+}
+
+exports.getAdc2Value = getAdc2ValueInternal;
 
 exports.setAdcValue = function setAdcValue(err, value){
     if (err) throw err; 
@@ -398,10 +410,10 @@ function recoverFromOutOfRange(callback){
 	});
 }
 
-function monitorStatus(callback){   
+function monitorStatus(callback){
     gpio.getLimitswitch(function(err, limitSwitch){
 	if (err) throw err;
-        if (limitSwitch == 0){	            
+        if (limitSwitch == 0){
 //	    console.log("LIMIT!:" + limitSwitch + "<->0" );
 
             recoverFromOutOfRange(function(){				
@@ -416,8 +428,8 @@ function monitorStatus(callback){
                 }
             });
 		callback();
-        }           
-    });        
+        }
+    });
 }
 
 function monitorPosition(){
@@ -457,7 +469,7 @@ function monitorPosition(){
 				}
 				else{
 					with (currentAntenna.RANGE){
-						console.log("CHECKING RANGE!!");
+						//console.log("CHECKING RANGE!!");
 						dac.isMoovingUp(function(err, isMooving){
 							if (isMooving && (height >= (MAX - TOLERANCE))){
 								client.set(CACHED_TARGET_POSITION,MAX,function(){});
@@ -472,7 +484,6 @@ function monitorPosition(){
 				}
 			});
 		});
-		
 		client.set(CACHED_CURRENT_POSITION,height);
 	});
 	monitorStatus(function(){
@@ -502,11 +513,9 @@ service.on("message", function(channel, message){
 						client.set(CACHED_TARGET_POSITION,message, function(){});
 					}
 				}
-				
 			}
-		});	
+		});
     }
-	
     if (channel === tools.CHANNEL_EMERGENCY){
 		if (message === tools.MSG_EMERGENCY_STOP){
 			service.unsubscribe(CHANNEL_POSITION_HANDLER);		    
@@ -612,11 +621,9 @@ exports.setMeasured = function setPosition(err, measuredPosition, callback){
     });
 };
 
-
 function getAntenna(err, callback){
 	callback(err, currentAntenna.ID);
 }
-
 
 function setAntenna(err, newAntenna, callback){
 	if (err) throw err;
@@ -625,7 +632,6 @@ function setAntenna(err, newAntenna, callback){
 	}
 
 	callback(null,currentAntenna.ID);
-	
 }
 exports.getAntenna = getAntenna;
 exports.setAntenna = setAntenna;
@@ -657,26 +663,23 @@ exports.setLimitoverride =  gpio.setLimitoverride;
 exports.clrLimitoverride =  gpio.clrLimitoverride;
 exports.getLimitswitch = gpio.getLimitswitch;
 exports.getInputStatus = gpio.getInputStatus;
-
 exports.quit = dac.quit;
 
-function init(){		
+function init(){
     gpio.init(null,function(err){
 	if(err) throw err;
 	clrPosition();
-	setTimeout(monitorPosition, 1000);	
-//    setTimeout(monitorStatus, 100);
+	setTimeout(monitorPosition, 1000);
 	service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
 	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
         isEmergencyOngoing(null, function(err, emergency){
-    	    if (emergency === "0"){          
-        	    service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
+    	    if (emergency === "0"){
+        	service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
 	    }
 	    else{
-		clrEmergency();			
-//                setEmergency("INIT");
+		clrEmergency();
             }
-        });    
+        });
     });
 }
 init();

@@ -410,3 +410,8 @@ function accelerate(value){
 	setSpeed(currentSpeed);
 		
 }
+
+
+function powerOff(){
+    $.ajax({url:'/api/power', type:'DELETE'}).success(function(){});
+}

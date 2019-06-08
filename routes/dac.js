@@ -21,7 +21,9 @@ var CONFIGURATION = {"DAC":{"RANGE":{"MIN":0,"MAX":4095},"INIT":2068}};
 var SERVICE_NAME = "DAC-SERVICE";
 var CACHED_VALUE = "dac-lastvalue";
 var CHANNEL_DAC_VALUE = "dac-value";
-var SPI_DEVICE = '/dev/spidev0.0';
+//Target device is '/dev/spidev0.0'
+var SPI_DEVICE = 0;
+var SPI_DEVICE_NUMBER = 0;
 
 service.on("error", function(err){
     console.log("Redis DAC-Service error\n" + err);    
@@ -57,17 +59,15 @@ var internalSetDac = function(err, value, callback){
 if (tools.hardwareAvailable())
 {
 	// HW - interaction initial definition
-	var SPI = require('spi');
-	var spi = new SPI.Spi(SPI_DEVICE, {
-		'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
-		'chipSelect': SPI.CS['low'] // 'none', 'high' - defaults to low
-	  }, function(s){
-              s.close();
-              s.open();
-          });
+	var SPI = require('spi-device');
+	var spi = SPI.openSync(SPI_DEVICE, SPI_DEVICE_NUMBER);
 
-	internalSetDac = function(err, value, callback){                        
-                        client.set(CACHED_VALUE, value);
+	internalSetDac = function(err, value, callback){   
+                        if (err){
+                            internalSetDac(null, CONFIGURATION.DAC.INIT,function(){});
+                            throw err;
+                        }
+                        client.set(CACHED_VALUE, value);                          
 			var txbuf = new Buffer(2);
 			var rxbuf = new Buffer(2);                        
 			txbuf.writeUInt16BE(value,0);
@@ -78,9 +78,17 @@ if (tools.hardwareAvailable())
 			//Default:  [0                 ][0        ][1                  ][ 1                  ]> value
 			//Default is 0x3x xx
 			txbuf.writeUInt8(txbuf.readUInt8(0) | 0x30,0);
-			spi.transfer(txbuf, rxbuf, function(){
+                        // An SPI message is an array of one or more read+write transfers
+                        var message = [{
+                          sendBuffer: txbuf, // Sent to read channel 5
+                          receiveBuffer: rxbuf,               // Raw data read from channel 5
+                          byteLength: 2,
+                          speedHz: 20000 // Use a low bus speed to get a good reading from the TMP36
+                        }];                        
+			spi.transfer(message, function(err, message){
                             callback(null, value);
                         });
+                        
 	};        
         //* This is just to try to ensure that the DAC is initialized. 
         //  But I know it will not be executed in all cases in the correct order.
@@ -96,7 +104,7 @@ function setDacLevel(err, newValue){
         if (err){
             assessDacRange(null, newValue, internalSetDac);
         }
-        if (oldValue != newValue){            
+        if (oldValue !== newValue){            
             assessDacRange(null, newValue, internalSetDac);
         }
     });
