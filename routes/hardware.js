@@ -182,28 +182,43 @@ exports.getMode = function getMode(err){
  * enables the normal mode.
  */
 exports.setMode = function setMode(err, newMode) {
-    if (err) throw err; 
-    if (newMode==="emulator")
-    {
-        configuration.mode = "emulator";
-    }
-    else
-    {
-        configuration.mode = "real";
-    }
-    console.log("New mode: " + configuration.mode);
+	if (err) throw err; 
+	var currMode = configuration.mode;
+	if (newMode==="emulator")
+	{
+        	configuration.mode = "emulator";
+    	}
+    	else
+    	{
+		if (tools.hardwareAvailable())
+		{
+        		configuration.mode = "real";
+		}
+    	}
+    	console.log("New mode: " + configuration.mode);
 };
 
-/*TODO 
- * On a resetMode call the mode should match the capabilties of the server environment.
- * If possible then set to real mode if not continue with the emulatrion.
- * */
-
+/**
+ * Esposes the reset mode function
+ * This function resets the mode to the capabilitites of the server.
+ */
 exports.resetMode = function resetMode(err){
-    if (err) throw err; 
-    configuration.mode = "emulator";
+	if (err) throw err; 
+	if (tools.hardwareAvailable())
+	{
+        	configuration.mode = "real";
+	}
+	else
+	{
+		configuration.mode = "emulator";
+	}
 };
 
+/**
+ * Fetch the current value of the Analog Digital Converter (ADC).
+ * @param err - Error that may occurred earlier in the call chain.
+ * @param callback - call back function
+ */
 function getAdcValueInternal(err, callback){
     if (err) throw err;
     if (callback === null){
