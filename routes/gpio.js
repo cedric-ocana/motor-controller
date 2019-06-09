@@ -10,7 +10,7 @@ var sysFsPath = "/sys/class/gpio/";
 var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":23,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
                      "MOTORDRIVER":{"PIN":24,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
                      "STATUS_LIMIT":{"PIN":25,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
-                     "STATUS_GOHOME_SWITCH":{"PIN":15,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
+                     "STATUS_CALIBRATION_SWITCH":{"PIN":15,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_5V_FIBER":{"PIN":17,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_15V_NEGATIVE":{"PIN":27,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_15V_POSITIVE":{"PIN":18,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"}
@@ -26,7 +26,7 @@ var internalClrLimitoverride = function(callback){
         callback(null);
     };
 
-var internalLimitSwitch = function(callback){        
+var internalLimitSwitch = function(callback){
         callback(null, CONFIGURATION.LIMITSWITCH.INIT);
     };
 
@@ -46,7 +46,7 @@ var internalGetLimitswitch = function(callback){
     };
 
 var internalGetGoHomeSwitch = function(callback){
-        console.log('GOHOMESWITCH:\tUNDEF-FALSE');
+        console.log('CALIBRATIONSWITCH:\tUNDEF-FALSE');
         callback(null, 1);
     };
 
@@ -101,14 +101,13 @@ if (tools.hardwareAvailable())
 	else{
             callback(null);
 		// LIMITOVERRIDE// LIMITOVERRIDE
-
 		openGpio("LIMITOVERRIDE",function(err){
 		openGpio("MOTORDRIVER",function(err){
 		openGpio("STATUS_LIMIT",function(err){
 		openGpio("STATUS_5V_FIBER",function(err){
 		openGpio("STATUS_15V_NEGATIVE",function(err){
 		openGpio("STATUS_15V_POSITIVE",function(err){
-		openGpio("STATUS_GOHOME_SWITCH",function(err){callback(err);
+		openGpio("STATUS_CALIBRATION_SWITCH",function(err){callback(err);
 		});// STATUS_15V_POSITIVE
 		});// STATUS_15V_NEGATIVE
 		});// STATUS_5V_FIBER
@@ -140,35 +139,31 @@ if (tools.hardwareAvailable())
     internalClrLimitoverride = function(callback)
     {
         setGpio(CONFIGURATION.LIMITOVERRIDE.PIN,CONFIGURATION.LIMITOVERRIDE.CLR, callback);
-    }; 
+    };
 
     internalSetMotordriver = function(callback)
     {
         setGpio(CONFIGURATION.MOTORDRIVER.PIN, CONFIGURATION.MOTORDRIVER.SET, callback);
-    };     
+    };
 
     internalClrMotordriver = function(callback)
     {
         setGpio(CONFIGURATION.MOTORDRIVER.PIN, CONFIGURATION.MOTORDRIVER.CLR, callback);
-    };  
-    
-    internalLimitSwitch = function(callback){        
+    };
+    internalLimitSwitch = function(callback){
         callback(null, CONFIGURATION.LIMITOVERRIDE.INIT);
     };
-    
     internalGetLimitswitch = function(callback){
-        
-        getGpio(CONFIGURATION.STATUS_LIMIT.PIN, callback);       
-    };    
-    
+        getGpio(CONFIGURATION.STATUS_LIMIT.PIN, callback);
+    };
     internalGetStatus = function(name, callback){
         if (CONFIGURATION.hasOwnProperty(name)){
             getGpio(CONFIGURATION[name].PIN, callback);
         }
         else{
             console.log('UNKNOWN IO:\tUNDEF-FALSE');
-            callback(null, -1);            
-        }            
+            callback(null, -1);
+        }
     };
 }
 
@@ -189,4 +184,4 @@ exports.onLimit = function onLimit(callback){
                 callback(null);
            }
         });
-    };
+};

@@ -340,7 +340,7 @@ router.route('/emergency')
             generateResponse(null, 'emergency-get', result, function send(err, data){
                 data.data = result;
                 res.json(data);
-            });                           
+            });
         });
     });
     
@@ -355,7 +355,7 @@ router.route('/position')
             });
         }
         else{
-            generateResponse(new Error( "Called with undefined value parameter. Body: " + request), 'mode-put', hardware.getMode(), function send(err, data){
+            generateResponse(new Error( "Called with undefined value parameter. Body: " +JSON.stringify(request)), 'mode-put', hardware.getMode(), function send(err, data){
                 res.json(data);
             });                       	
         }

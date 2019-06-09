@@ -1,5 +1,5 @@
 /*
- * @file This file represents a basic hardware abstraction layer (HAL).
+ * @file This file represents a basic hardware abstraction layer (HAL) and controls the mast.
  * @author Cedric Ocaña, BAKOM, 2012 - 2019, +41 79 443 36 03
  */
 
@@ -82,73 +82,72 @@ exports.getAntennas = function(callback){
 /**
  * Configuraton of the whole mast controller
  */
-var configuration = {"mode":mode,
-                     "status":-1,
-                    "dac":{"value":0},
-			"adc2":2,
-                    "adc":{
-                        "value":43500,
-                       /* Basic formula is:
-                        * h = n * ((r1 + r2) * 2 * pi * npot/nmax) + offset
-                        * h = n * multiplicator + offset
-                        * where:
-                        * h     := height of the antenna holding tray
-                        * r1    := the radius of the cylinder that coils up the cable
-                        * r2    := radius of the cable
-                        * nmax  := maximal value the adc may get
-                        * n     := value that was read out of the ADC
-                        * npot  := number of turns of the variable resistor
-                        * pi    := 3.141593    
-                        * offset:= The offset between measured and calculated values                
-                        */
-                        "multiplicator":0.0052729034423828125,
-                        "loffset": -127.8700631713867,
-                        "lmax":500,
-                        "lfixation":32,
-                        "lweel":49
-                    },
-                    "position":{
-                        "actual":110,
-                        "default":120,
-                        "tolerance":0.05
-                    }, //32768
-                    "speed":{
-			"goSlow":0,
-                        "zero":getSpeed(0.00), //OK this value comes from a i7...
-                        "up": {
-                            "fast": {
-                                "distance": 50,
-                                "speed": 0
-                            },
-                            "normal": {
-                                "distance": 5,
-                                "speed": 1100
-                            },
-                            "slow": {
-                                "distance": 1,
-                                "speed": 1218
-                            }
-                        },
-                        "down": {
-                            "fast": {
-                                "distance": 50,
-                                "speed": getSpeed(1.00)
-                            },
-                            "normal": {
-                                "distance": 5,
-                                "speed": 2800
-                            },
-                            "slow": {
-                                "distance": 1,
-                                "speed": 2300
-                            }
-                        },
-                        "tsampling":100,
+var configuration = 	{"mode":mode,
+                     	"status":-1,
+                     	"dac":{"value":0},
+ 			"adc2":2,
+                    	"adc":{
+                        	"value":43500,
+	                       /* Basic formula is:
+       		                * h = n * ((r1 + r2) * 2 * pi * npot/nmax) + offset
+                 	        * h = n * multiplicator + offset
+	                        * where:
+        	                * h     := height of the antenna holding tray
+                	        * r1    := the radius of the cylinder that coils up the cable
+	                        * r2    := radius of the cable
+	                        * nmax  := maximal value the adc may get
+        	                * n     := value that was read out of the ADC
+	                        * npot  := number of turns of the variable resistor
+                	        * pi    := 3.141593
+	                        * offset:= The offset between measured and calculated values
+        	                */
+                	        "multiplicator":0.0052729034423828125,
+	                        "loffset": -127.8700631713867,
+	                        "lmax":500,
+        	                "lfixation":32,
+	                        "lweel":49
+			},
+                    	"position":{
+                        	"actual":110,
+                        	"default":120,
+                        	"tolerance":0.05
+                    	},
+			"speed":{
+				"goSlow":0,
+                        	"zero":getSpeed(0.00),
+                        	"up": {
+                            		"fast":{
+                                		"distance": 50,
+                                		"speed": 0
+                            		},
+                           		 "normal":{
+                                		"distance": 5,
+                                		"speed": 1100
+                            		},
+                            		"slow": {
+                                		"distance": 1,
+                                		"speed": 1218
+                            		}
+                        	},
+                        	"down": {
+                            		"fast": {
+                                		"distance": 50,
+                                		"speed": getSpeed(1.00)
+                            		},
+                            		"normal": {
+                                		"distance": 5,
+                                		"speed": 2800
+                            		},
+                            		"slow": {
+                                		"distance": 1,
+                                		"speed": 2300
+                            		}
+                        	},
+                        "tsampling":200,
                         "dtDeceleration":1,
                         "dtAcceleration": 1
                         }
                     };
-
 /**
  * Load the configuration for each startup of the mast. The settings for the mast
  * need to be changed in the /config.hw. 
@@ -236,9 +235,15 @@ function getAdcValueInternal(err, callback){
         }
     }
 }
-
+/**
+ * Exposes the getAdcValue function
+ */
 exports.getAdcValue = getAdcValueInternal;
-
+/**
+ * Fetch the current value of the second Analog Digital Converter (ADC).
+ * @param err - Error that may occurred earlier in the call chain.
+ * @param callback - call back function
+ */
 function getAdc2ValueInternal(err, callback){
     if (err) throw err;
     if (callback === null){
@@ -256,89 +261,121 @@ function getAdc2ValueInternal(err, callback){
         }
     }
 }
-
+/**
+ * Exposes the getAdcValue function
+ */
 exports.getAdc2Value = getAdc2ValueInternal;
 
+/**
+ * Exposes the possiblity to set the ADC value in the emulator mode.
+ */
 exports.setAdcValue = function setAdcValue(err, value){
-    if (err) throw err; 
+    if (err) throw err;
     configuration.adc.value = value;
 };
 
+/**
+ * Exposes the Digital Analog Converter function.
+ */
 exports.getDacValue = dac.getDacValue;
 
-
+/**
+ * changes the speed only if the new target speed is not too different.
+ * @param vTarget - target speed.
+ */
 function changeSpeed(vTarget, callback){
-//    var vDelta = vTarget > configuration.dac.value ? vTarget - configuration.dac.value : configuration.dac.value - vTarget;    
     var vDelta = configuration.dac.value - vTarget;
     with (configuration.speed){
-        if (!((vDelta < 5) && (vDelta > 5))) {            
-            //console.log("Current, Target, delta: " + configuration.dac.value + ", " + vTarget + ", " + vDelta);
+        if (!((vDelta < 5) && (vDelta > 5))) {
             setDacValueInternal(null,(vTarget));
         }
-        callback(null);   
+        callback(null);
     }
 }
 
-function clrSpeedValueInternal(err, callback){ 
-    if (err) throw err;    
-    changeSpeed(configuration.speed.zero, callback);    
+/**
+ * Clears the current speed setting.
+ */
+function clrSpeedValueInternal(err, callback){
+    if (err) throw err;
+    changeSpeed(configuration.speed.zero, callback);
 }
 exports.clrSpeed = clrSpeedValueInternal;
 
-function setSpeedValueInternal(err, value, callback){ 
-    if (err) throw err;     
+/**
+ * Sets the speed setting.
+ */
+function setSpeedValueInternal(err, value, callback){
+    if (err) throw err;
     clrPosition();
-	if (emulatorActive()){  
-		configuration.adc.value = configuration.adc.value + (value-2068)/10;
+	if (emulatorActive()){
+		configuration.dac.value = configuration.dac.value + (value-2068)/10;
 	}
-    changeSpeed(value, callback);    
+    changeSpeed(value, callback);
 }
 exports.setSpeed = setSpeedValueInternal;
 
-function clrDacValueInternal(err, callback){ 
-    if (err) throw err;     
+/**
+ * Clears the current DAC parameter.
+ */
+function clrDacValueInternal(err, callback){
+    if (err) throw err;
     setDacValueInternal(null,configuration.speed.zero);
     callback();
 }
 exports.clrDacValue = clrDacValueInternal;
 
-function setDacValueInternal(err, newDacValue){   
-    if (err) throw err;	
+/**
+ * Clears the current speed setting.
+ */
+function setDacValueInternal(err, newDacValue){
+    if (err) throw err;
     dac.setValue(err, newDacValue, function(){});
 }
-
 exports.setDacValue = setDacValueInternal;
 
+/**
+ * Exposes the set limit override. This is used to override the limit protection to get the 
+ * antenna out of a limit position.
+ */
 exports.setLimitoverride = function setLimitoverride(){
     gpio.SetLimitoverride();
 };
 
+/**
+ * Exposes the clr limit override. This is used to clear the limit protection to get the 
+ * antenna out of a limit position.
+ */
 exports.clrLimitoverride = function clrLimitoverride(){
     gpio.clrLimitoverride();
 };
 
+/**
+ * Speed calculations that were deemed important at the beginning.
+ * The final solution does not relay on it but the functionality remained in the code.
+ * => Refactoring could be interesting here.
+ */
 function calcNanoSeconds(time){
     return (time[0] * 1e9 + time[1]);
 }
 
 function internalGetSpeed(err, callback){
     var startTime = process.hrtime();
-    getAdcValueInternal(err,function(firstError, firstValue){        
+    getAdcValueInternal(err,function(firstError, firstValue){
         setTimeout(function(){
-            var fristIntermediateTime = process.hrtime(); 
-            getAdcValueInternal(err,function(secondError,secondValue){            
-                var measurementDuration2 = calcNanoSeconds(process.hrtime(fristIntermediateTime));                        
+            var fristIntermediateTime = process.hrtime();
+            getAdcValueInternal(err,function(secondError,secondValue){
+                var measurementDuration2 = calcNanoSeconds(process.hrtime(fristIntermediateTime));
                 var measurementDuration = calcNanoSeconds(fristIntermediateTime) - calcNanoSeconds(startTime);
                 var averageDuration = (measurementDuration + measurementDuration2)/2;
                 var diff = Math.abs( measurementDuration2 - measurementDuration)/2;
-                var dt =  averageDuration - diff;            
+                var dt =  averageDuration - diff;
                 var result = {};
                 result.dt = (dt / 1e9);
                 result.du = (secondValue - firstValue);
                 result.adc  = secondValue;
                 result.speed = result.du / result.dt;
                 configuration.adc.value = result.adc;
-                //console.log("timeout:" + measurementDuration + "ADC fetching delay: " + result.dt + ", ADC difference: " + result.du);
                 callback(null, result);
             }); 
         },100);
@@ -346,32 +383,39 @@ function internalGetSpeed(err, callback){
 }
 exports.getSpeed = internalGetSpeed;
 
+/**
+ * Moves the antenna up or down
+ * @pram err - Error that may occurred in calling function
+ * @param distance - distance to the target height
+ * @param settings - speed and distance settings
+ * @param callback - function to call as soon movemcommand was sent
+ */
 function move(err, distance, settings, callback){
-    //changeSpeed(settings.slow.speed, callback);
-    if ((distance <= settings.slow.distance)) {
+    if (distance <= settings.slow.distance) {
         changeSpeed(settings.slow.speed, callback);
     }
     else{
         if ((distance <= settings.normal.distance) || (configuration.speed.goSlow === 1)) {
             changeSpeed(settings.normal.speed, callback);
         }
-        else{           
+        else{
             changeSpeed(settings.fast.speed, callback);
         }
     }
 }
-function moveUp(err, distance, callback){    
-    if (emulatorActive()){       
+function moveUp(err, distance, callback){
+    if (emulatorActive()){
         configuration.adc.value = configuration.adc.value - 20;
     }
     move(err, distance, configuration.speed.up, callback);
 }
 function moveDown(err, distance, callback){
-    if (emulatorActive()){       
+    if (emulatorActive()){
         configuration.adc.value = configuration.adc.value + 20;
     }
     move(err, distance, configuration.speed.down, callback);
 }
+
 var CACHED_TARGET_POSITION = "target-position";
 var CACHED_CURRENT_POSITION = "current-position";
 var CACHED_POSITIONLOOP_ACTIVE = "position-loop";
@@ -389,35 +433,35 @@ exports.clrPosition = clrPosition;
 
 function setEmergency(source){
 	console.log("Emergency source: " + source);
-    client.publish(tools.CHANNEL_EMERGENCY,tools.MSG_EMERGENCY_STOP,function(){});
-    client.set(tools.FLAG_EMERGENCY_ONGOING,1);    
+	client.publish(tools.CHANNEL_EMERGENCY,tools.MSG_EMERGENCY_STOP,function(){});
+	client.set(tools.FLAG_EMERGENCY_ONGOING,1);    
 };
 exports.setEmergency = setEmergency;
 
 function clrEmergency(){
-    client.set(tools.FLAG_EMERGENCY_ONGOING,0);
-    client.publish(tools.CHANNEL_EMERGENCY,tools.MSG_EMERGENCY_RELEASE,function(){});
+	client.set(tools.FLAG_EMERGENCY_ONGOING,0);
+	client.publish(tools.CHANNEL_EMERGENCY,tools.MSG_EMERGENCY_RELEASE,function(){});
 };
 exports.clrEmergency = clrEmergency;
 
 function isEmergencyOngoing(err, callback){
-    client.get(tools.FLAG_EMERGENCY_ONGOING, callback);
+	client.get(tools.FLAG_EMERGENCY_ONGOING, callback);
 };
 
 exports.isEmergencyOngoing = isEmergencyOngoing;
 
-function getPositionFromAdcValue(adcValue){     
-    with (configuration.adc){
+function getPositionFromAdcValue(adcValue){
+	with (configuration.adc){
 		var height = lmax - adcValue * multiplicator + loffset;
 		client.publish(tools.CHANNEL_HEIGHT, height,function(){});
-        return height;
-    }
+		return height;
+    	}
 }
 
-function getPositionInternal(err, callback){      
+function getPositionInternal(err, callback){
     internalGetSpeed(err, function(err, value){
-        if (err) throw err;         		
-        value.position = getPositionFromAdcValue(value.adc);        
+        if (err) throw err;
+        value.position = getPositionFromAdcValue(value.adc);
         callback(null, value);
     });
 }
@@ -425,27 +469,26 @@ function getPositionInternal(err, callback){
 function recoverFromOutOfRange(callback){ 
 	client.get(CACHED_CURRENT_POSITION,function(err, value){
 		var speed = configuration.speed.up.normal.speed;
-		if(value >= 135){		   
-			speed  = configuration.speed.down.normal.speed;	
-			if (emulatorActive()){       
+		if(value >= 135){
+			speed  = configuration.speed.down.normal.speed;
+			if (emulatorActive()){
 				configuration.adc.value = configuration.adc.value - 20;
-			}			
+			}
 		}
 		else{
-			if (emulatorActive()){       
+			if (emulatorActive()){
 				configuration.adc.value = configuration.adc.value + 20;
 			}
 		}
-
 		console.log("Recovering from out of range. DAC:" + speed);
 		gpio.clrLimitoverride(function(err, status){
-                setTimeout(function(){               	    
-					dac.lowLevelDriverNoProtectionSetValue(null, speed);		    						
-					gpio.setLimitoverride(function(){});
-                    setTimeout(function(){
-			callback();
-		    },100);	
-                },800);			
+                setTimeout(function(){
+			dac.lowLevelDriverNoProtectionSetValue(null, speed);
+			gpio.setLimitoverride(function(){});
+                    	setTimeout(function(){
+				callback();
+		    	},100);
+                },800);
 		});
 	});
 }
@@ -454,9 +497,7 @@ function monitorStatus(callback){
     gpio.getLimitswitch(function(err, limitSwitch){
 	if (err) throw err;
         if (limitSwitch == 0){
-//	    console.log("LIMIT!:" + limitSwitch + "<->0" );
-
-            recoverFromOutOfRange(function(){				
+            recoverFromOutOfRange(function(){
                 setEmergency("LIMITSWITCH");
 		callback();
 		});
@@ -472,44 +513,49 @@ function monitorStatus(callback){
     });
 }
 
+/**
+ * Main loop to manage the position of the antenna. The function is calling it self
+ * continuesly with the cycle that is defined in the configuration object.
+ * => The target positon can be set through REDIS
+ * => The current position is announced through REDIS
+ * => Configuration of the general behaviour is done through the configuration object
+ * The general concept is not a regulation loop but a simple function taht moves as soon 
+ * the target value is changed.
+ */
 function monitorPosition(){
 	getAdcValueInternal(null, function(err, adcValue){
 		var height;
 		with (configuration.adc){
-			height = lmax - adcValue * multiplicator + loffset;		
-		}		
+			height = lmax - adcValue * multiplicator + loffset;
+		}
 		client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){
 			tools.getFloat(tempTargetPosition, function(err, targetPosition){
 				if (tempTargetPosition>0){
 					var distance = Math.abs(targetPosition-height);
-					var limit = {};       
+					var limit = {};
 					limit.max = targetPosition + configuration.position.tolerance;
 					limit.min = targetPosition - configuration.position.tolerance;
 					if(height > limit.max){
 						console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
 						moveDown(null, distance, function(err){
-//							setTimeout(monitorPosition, 200);
-						});                        
+						});
 					}
 					else{
 						if (height < limit.min){
 							console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((height * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
 							moveUp(null, distance, function(err){
-//								setTimeout(monitorPosition, 200);								
-							});                             
+							});
 						}
 						else{
 							clrDacValueInternal(null,function() {
 								console.log("Target position reached.");
-								clrPosition();		
-//								setTimeout(monitorPosition, 200);								
-							}); 
+								clrPosition();
+							});
 						}
 					}
 				}
 				else{
 					with (currentAntenna.RANGE){
-						//console.log("CHECKING RANGE!!");
 						dac.isMoovingUp(function(err, isMooving){
 							if (isMooving && (height >= (MAX - TOLERANCE))){
 								client.set(CACHED_TARGET_POSITION,MAX,function(){});
@@ -519,7 +565,7 @@ function monitorPosition(){
 							if (isMooving && (height <= (MIN + TOLERANCE))){
 								client.set(CACHED_TARGET_POSITION,MIN,function(){});
 							}
-						});		
+						});
 					}
 				}
 			});
@@ -527,25 +573,25 @@ function monitorPosition(){
 		client.set(CACHED_CURRENT_POSITION,height);
 	});
 	monitorStatus(function(){
-		setTimeout(monitorPosition, 200);
+		setTimeout(monitorPosition, configuration.tsampling);
 	});
 }
 
 service.on("subscribe", function(channel, count){
-    console.log(SERVICE_NAME + " subscribed for channel: " + channel);
-    if (channel === CHANNEL_POSITION_HANDLER){	
-		client.set(CACHED_POSITIONLOOP_ACTIVE,"1");	
-    }
+	console.log(SERVICE_NAME + " subscribed for channel: " + channel);
+   	if (channel === CHANNEL_POSITION_HANDLER){
+		client.set(CACHED_POSITIONLOOP_ACTIVE,"1");
+    	}
 });
 
-service.on("message", function(channel, message){        
-    if (channel === CHANNEL_POSITION_HANDLER){
+service.on("message", function(channel, message){
+	if (channel === CHANNEL_POSITION_HANDLER){
 		tools.getFloat(message, function(err, height){
 			with (currentAntenna.RANGE){
 				if (height > MAX){
 					client.set(CACHED_TARGET_POSITION,MAX, function(){});
 				}
-				else{							
+				else{
 					if (height < MIN){
 						client.set(CACHED_TARGET_POSITION,MIN, function(){});
 					}
@@ -555,94 +601,29 @@ service.on("message", function(channel, message){
 				}
 			}
 		});
-    }
-    if (channel === tools.CHANNEL_EMERGENCY){
+	}
+    	if (channel === tools.CHANNEL_EMERGENCY){
 		if (message === tools.MSG_EMERGENCY_STOP){
-			service.unsubscribe(CHANNEL_POSITION_HANDLER);		    
+			service.unsubscribe(CHANNEL_POSITION_HANDLER);
 		}
 		if (message === tools.MSG_EMERGENCY_RELEASE){
 			service.subscribe(CHANNEL_POSITION_HANDLER);
-			clrPosition();			
-		}	
-    }
+			clrPosition();
+		}
+    	}
 	if (channel === tools.CHANNEL_HEIGHT){
-		// client notifications to be added here...		
+		// client notifications to be added here...
 	}
 });
 
 service.on("unsubscribe", function(channel, count){
         console.log(SERVICE_NAME + " unsubscribed from channel: " + channel);
 	if (channel === CHANNEL_POSITION_HANDLER){
-            client.set(CACHED_POSITIONLOOP_ACTIVE,"0");    
+            client.set(CACHED_POSITIONLOOP_ACTIVE,"0");
 	}
 });
 
-
-//
-//function moveThorwardsPosition(positionReachedCallback){    
-//    client.get(CACHED_TARGET_POSITION, function(err, tempTargetPosition){	  
-//	    tools.getFloat(tempTargetPosition, function(err, targetPosition){
-//		getPositionInternal(err, function(err, data){
-//		    if (err) throw err;                    
-//		    with (data){
-//			//console.log("Position loop active" + targetPosition + "Current Position:" + position);
-//                        if (targetPosition > 0){
-//                            var distance = Math.abs(targetPosition-position);
-//                            var limit = {};       
-//                            limit.max = targetPosition + configuration.position.tolerance;
-//                            limit.min = targetPosition - configuration.position.tolerance;
-//                            if(position > limit.max){
-//                                console.log("DOWN: " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit" );            
-//                                moveDown(null, distance, function(err){
-//                                    positionReachedCallback(null, 0);
-//                                });                        
-//                            }
-//                            else{
-//                                if (position < limit.min){
-//                                    console.log("UP  : " + ((targetPosition * 10)|0) + "mm, Current: " + ((data.position * 10)|1) + "mm, >" + ((limit.max * 10)|1) +"mm, <" + ((limit.min * 10)|0) + "mm, distance:" + (distance) + "bit");            
-//                                    moveUp(null, distance, function(err){
-//                                        positionReachedCallback(null, 0);
-//                                    });                             
-//                                }
-//                                else{
-//                                    positionReachedCallback(null, 1);
-//                                }
-//                            }                         
-//                        }
-//                        else{
-//                            positionReachedCallback(null, 1);
-//                        } 
-//		    }
-//		});
-//	    });
-//    });     
-//}
-
-
-
-//function positionLoop(err, value){
-//    if (err) throw err;
-//    if (value == "1"){        
-//		moveThorwardsPosition(function(err, positionReached){
-//			if (err) throw err;
-//			if (positionReached === 1){
-//			clrDacValueInternal(null,function() {
-//				console.log("Target position reached.");
-//			}); 
-//			}
-//			else{
-//			client.get(CACHED_POSITIONLOOP_ACTIVE,positionLoop);
-//			}
-//		});
-//    }    
-//    else{
-//        console.log("Position loop stopped");
-//        clrDacValueInternal(null,function() {            
-//        });        
-//    }
-//}
-
-exports.setMeasured = function setPosition(err, measuredPosition, callback){     
+exports.setMeasured = function setPosition(err, measuredPosition, callback){
     getPositionInternal(err,function(err, currentPosition){
         var potiPosition = currentPosition.position - configuration.adc.loffset;
 	var newOffset = measuredPosition - potiPosition;
@@ -696,7 +677,6 @@ function getSlow(err, callback){
 
 exports.setSlow =  setSlow;
 exports.getSlow =  getSlow;
-
 exports.enableMotor =  gpio.enableDriver;
 exports.disableMotor =  gpio.disableDriver;
 exports.setLimitoverride =  gpio.setLimitoverride;
@@ -706,20 +686,20 @@ exports.getInputStatus = gpio.getInputStatus;
 exports.quit = dac.quit;
 
 function init(){
-    gpio.init(null,function(err){
-	if(err) throw err;
-	clrPosition();
-	setTimeout(monitorPosition, 1000);
-	service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
-	service.subscribe(tools.CHANNEL_HEIGHT,function(){});
-        isEmergencyOngoing(null, function(err, emergency){
-    	    if (emergency === "0"){
-        	service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
-	    }
-	    else{
-		clrEmergency();
-            }
-        });
-    });
+	gpio.init(null,function(err){
+		if(err) throw err;
+		clrPosition();
+		setTimeout(monitorPosition, 1000);
+		service.subscribe(tools.CHANNEL_EMERGENCY,function(){});
+		service.subscribe(tools.CHANNEL_HEIGHT,function(){});
+	        isEmergencyOngoing(null, function(err, emergency){
+	    		if (emergency === "0"){
+        			service.subscribe(CHANNEL_POSITION_HANDLER,function(){});
+		    	}
+			else{
+				clrEmergency();
+            		}
+        	});
+	});
 }
 init();
