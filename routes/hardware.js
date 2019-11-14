@@ -493,6 +493,11 @@ function recoverFromOutOfRange(callback){
 	});
 }
 
+/**
+ * Function to check if the antenna tray is in the correct range. In fact the limit GPIO
+ * is checked and if the limit protection is triggered then the emergency is set.
+ * The function is called at the end of monitorPositon.
+ */
 function monitorStatus(callback){
     gpio.getLimitswitch(function(err, limitSwitch){
 	if (err) throw err;
