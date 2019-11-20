@@ -13,7 +13,7 @@ exports.MSG_EMERGENCY_RELEASE = "emergency-release";
 exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";
 
 exports.hardwareAvailable = function hardwareAvailable() {
-    if (os.hostname() === 'mk-mast1') 
+    if (os.hostname() === 'mk-mast1')
     {
         return true;
     }
@@ -21,13 +21,12 @@ exports.hardwareAvailable = function hardwareAvailable() {
     {
         return true;
     }
-    
     console.log("NOT PI! But:" + os.hostname() );
-    return false;       
+    return false;
 };
 
 
-exports.getFloat = function getFloat(field, callback){        
+exports.getFloat = function getFloat(field, callback){
 	if (field !== undefined){
 		var newValue = parseFloat(field,10);
 		if (isNaN(newValue)){

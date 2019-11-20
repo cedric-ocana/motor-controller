@@ -494,9 +494,10 @@ function recoverFromOutOfRange(callback){
 }
 
 /**
- * Function to check if the antenna tray is in the correct range. In fact the limit GPIO
+ * Function to check if the antenna tray is in the correct range and if the calibration
+ * switch is pressed. In fact the limit GPIO
  * is checked and if the limit protection is triggered then the emergency is set.
- * The function is called at the end of monitorPositon.
+ * The function is called at the end of monitorPositon function.
  */
 function monitorStatus(callback){
     gpio.getLimitswitch(function(err, limitSwitch){
@@ -515,6 +516,24 @@ function monitorStatus(callback){
             });
 		callback();
         }
+    });
+    gpio.getCalibrationswitch(function(err, calibrationSwitch){
+    	if (err) throw err;
+    	// Check if the calibration switch has been pressed
+    	if (calibrationSwitch == 0){
+    		adc.getAdc2Value(err, function(err, adcValue){
+    			if (err) throw err;
+    			with (currentAntenna.RANGE){
+    				var distance = MAX - MIN;
+    				var factor = adcValue/adc.max - 1;
+    				if (factor < 0) factor = 1;
+    				var newPosition = Math.round(((distance * factor) + MIN)*10)/10;
+				// console.log("CALIBRATION SWITCH PRESSED" , newPosition);
+    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
+
+    			}
+    		});
+    	}
     });
 }
 

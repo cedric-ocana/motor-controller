@@ -10,7 +10,7 @@ var sysFsPath = "/sys/class/gpio/";
 var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":23,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
                      "MOTORDRIVER":{"PIN":24,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
                      "STATUS_LIMIT":{"PIN":25,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
-                     "STATUS_CALIBRATION_SWITCH":{"PIN":15,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
+                     "STATUS_CALIBRATION_SWITCH":{"PIN":22,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_5V_FIBER":{"PIN":17,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_15V_NEGATIVE":{"PIN":27,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"},
                      "STATUS_15V_POSITIVE":{"PIN":18,"SET":1,"CLR":0,"INIT":1,"DIRECTION":"in"}
@@ -156,6 +156,11 @@ if (tools.hardwareAvailable())
     internalGetLimitswitch = function(callback){
         getGpio(CONFIGURATION.STATUS_LIMIT.PIN, callback);
     };
+    internalGetCalibrationswitch = function(callback){
+        getGpio(CONFIGURATION.STATUS_CALIBRATION_SWITCH.PIN, callback);
+    };
+
+
     internalGetStatus = function(name, callback){
         if (CONFIGURATION.hasOwnProperty(name)){
             getGpio(CONFIGURATION[name].PIN, callback);
@@ -175,6 +180,7 @@ exports.enableDriver = internalSetMotordriver;
 exports.disableDriver = internalClrMotordriver;
 
 exports.getLimitswitch = internalGetLimitswitch;
+exports.getCalibrationswitch = internalGetCalibrationswitch;
 exports.getInputStatus = internalGetStatus;
 
 exports.onLimit = function onLimit(callback){        
