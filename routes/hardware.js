@@ -15,7 +15,6 @@ var tools = require('./tools.js');
  * @dependencies Inclusion and setup of redis environemes to manage the status
  */
 var redis = require('redis');
-var redis = require('redis');
 var service = redis.createClient();
 var client = redis.createClient();
 
@@ -54,7 +53,9 @@ function getSpeed(signedRatio){
 var ANTENNAS={	"SMALL":{"ID":"SMALL",
 			"RANGE":{"MAX":180,"MIN":60.0, "TOLERANCE":0.2},
 			"NAME":"small antenna",
-			"COMPRESSION":{"a":111.103,"b":68.8971},
+			"COMPRESSION_UPPER":{"a":111.1029,"b":68.8971},
+			"COMPRESSION_LOWER":{"a":111.1193,"b":60.0000},
+			"COMPRESSION_MIDDLE":{"a":200.0000,"b":20.0067},
 			"CLASSES":{"POLE":"smallAntennadiv",
 				"MAIN":"smallAntenna"
 				},
@@ -63,7 +64,9 @@ var ANTENNAS={	"SMALL":{"ID":"SMALL",
 		"BIG":{"ID":"BIG",
 			"RANGE":{"MAX":170,"MIN":90, "TOLERANCE":0.2},
 			"NAME":"big antenna",
-			"COMPRESSION":{"a":88.8923,"b":81.1177},
+			"COMPRESSION_UPPER":{"a":88.8923,"b":81.1177},
+			"COMPRESSION_LOWER":{"a":44.4477,"b":90.0000},
+			"COMPRESSION_MIDDLE":{"a":200.0000,"b":20.0067},
 			"CLASSES":{"POLE":"bigAntennadiv",
 				"MAIN":"bigAntenna"
 				},
@@ -152,7 +155,7 @@ var configuration = 	{"mode":mode,
                     };
 /**
  * Load the configuration for each startup of the mast. The settings for the mast
- * need to be changed in the /config.hw. 
+ * need to be changed in the /config.hw.
  */
 tools.loadSettings("config.hw",configuration, function(err, newSettings){
 	configuration = newSettings;
@@ -162,7 +165,7 @@ tools.loadSettings("config.hw",configuration, function(err, newSettings){
  * Checkes if the emulator mode is active
  */
 function emulatorActive(){
-    return (configuration.mode === "emulator");    
+    return (configuration.mode === "emulator");
 }
 /**
  * Exposes if the emulator mode is active
@@ -173,17 +176,17 @@ exports.emulatorActive = emulatorActive();
  * Exposes the mode
  */
 exports.getMode = function getMode(err){
-    if (err) throw err; 
+    if (err) throw err;
     return configuration.mode;
 };
 
 /**
- * Exposes the set mode possiblity 
+ * Exposes the set mode possiblity
  * @param newMode - Only "emulator" can set the emulator mode. Any other value
  * enables the normal mode.
  */
 exports.setMode = function setMode(err, newMode) {
-	if (err) throw err; 
+	if (err) throw err;
 	var currMode = configuration.mode;
 	if (newMode==="emulator")
 	{
@@ -204,7 +207,7 @@ exports.setMode = function setMode(err, newMode) {
  * This function resets the mode to the capabilitites of the server.
  */
 exports.resetMode = function resetMode(err){
-	if (err) throw err; 
+	if (err) throw err;
 	if (tools.hardwareAvailable())
 	{
         	configuration.mode = "real";
@@ -528,21 +531,19 @@ function monitorStatus(callback){
     			with (currentAntenna){
     				var distance = RANGE.MAX - RANGE.MIN;
     				var factor = adcValue/adc.max - 1;
+    				var newPosition = 120;
     				if (factor < 0) factor = 1;
 				if (factor < 0.35){
-					factor = factor * 1.2957;
-					newPosition = RANGE.MIN + factor*(40/0.35);
+					newPosition = (factor * 1.2857) * COMPRESSION_LOWER.a + COMPRESSION_LOWER.b;
 				}
 				else if (factor > 0.65){
-					factor = factor * 1.2957-0.2957;
+					newPosition = (factor * 1.2857 - 0.2857) * COMPRESSION_UPPER.a + COMPRESSION_UPPER.b;
 				}
 				else{
-					factor = Math.round(50*(1/3 *(factor + 1)))/50;
+					newPosition = Math.round(50 * (1/3 *(factor + 1))) / 50 * COMPRESSION_MIDDLE.a + COMPRESSION_MIDDLE.b;
 				}
-
-    				var newPosition = Math.round(((distance * factor) + RANGE.MIN)*10)/10;
-				console.log("MANUAL POSITION factor, POSITION, DISTANCE, NEW EHIGHT: " , factor, (distance * factor), distance, newPosition );
-//    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
+				console.log("MANUAL POSITION FACTOR, POSITION: " , Math.round(1000 * factor)/1000, Math.round(100 * newPosition)/100 );
+    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
 
     			}
     		});
