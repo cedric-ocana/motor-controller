@@ -13,9 +13,9 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin
 DAEMON_ARGS="/opt/motor-controller/launch"
 DESC="node motor controller service"
-NODEUSER=root:root      
+NODEUSER=root:root
 LOCAL_VAR_RUN=/var/run
-NAME=node
+NAME=nodejs
 DAEMON=/usr/bin/$NAME
 LOGFILE=/var/log/motor-controller.log
 
@@ -52,8 +52,9 @@ do_start()
 {
 # First action that should be done is to turn off the motor driver.
 # This avoids any strange behaviour if the service was killed
-/opt/motor-controller/init.d/setupGPIOS
-echo "in" > /sys/class/gpio/gpio24/direction
+#/opt/motor-controller/init.d/setupGPIOS
+echo "out" > /sys/class/gpio/gpio24/direction
+echo "1" > /sys/class/gpio/gpio24/value
 # Return
 # 0 if daemon has been started
 # 1 if daemon was already running
@@ -74,6 +75,7 @@ do_stop()
 {
 # First action that should be done is to turn off the motor driver.
 # This avoids any strange behaviour if the service is stopped.
+echo "1" > /sys/class/gpio/gpio24/value
 echo "in" > /sys/class/gpio/gpio24/direction
 # Return
 # 0 if daemon has been stopped

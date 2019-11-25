@@ -1,8 +1,25 @@
-#! /bin/sh
-echo 23 > /sys/class/gpio/export
-echo 24 > /sys/class/gpio/export
-echo 25 > /sys/class/gpio/export
-echo 17 > /sys/class/gpio/export
-echo 27 > /sys/class/gpio/export
-echo 18 > /sys/class/gpio/export
-echo 22 > /sys/class/gpio/export
+#! /bin/bash
+
+gpio_export_function() {
+	if [ -d "/sys/class/gpio/gpio$1" ]; then
+		echo "GPIO ${1} already set"
+	else
+		echo "Exporting GPIO ${1}"
+		echo $1 > /sys/class/gpio/export
+	fi
+}
+
+### GPIO THAT INDICATES THE STATUS OF 5V SUPPLY OF THE FIBER TRANSCEIVER ###
+gpio_export_function 17
+### GPIO THAT INDICATES THE STATUS OF -15V SUPPLY OF THE FIBER TRANSCEIVER ###
+gpio_export_function 18
+### GPIO FOR EXTERNAL BUTTON (set height button) ###
+gpio_export_function 22
+### GPIO THAT MANAGES THE LIMIT OVERRIDE CIRCUIT ###
+gpio_export_function 23
+### GPIO THAT MANAGES THE MOTOR ENABLE CIRCUIT ###
+gpio_export_function 24
+### GPIO THAT INDICATES THE STATUS OF LIMIT SWITCH ###
+gpio_export_function 25
+### GPIO THAT INDICATES THE STATUS OF +15V SUPPLY OF THE FIBER TRANSCEIVER ###
+gpio_export_function 27

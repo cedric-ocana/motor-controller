@@ -52,8 +52,9 @@ function getSpeed(signedRatio){
  * Allows a flexible asignation of antennas and the related dimensions.
  */
 var ANTENNAS={	"SMALL":{"ID":"SMALL",
-			"RANGE":{"MAX":180,"MIN":67.0, "TOLERANCE":0.2},
+			"RANGE":{"MAX":180,"MIN":60.0, "TOLERANCE":0.2},
 			"NAME":"small antenna",
+			"COMPRESSION":{"a":111.103,"b":68.8971},
 			"CLASSES":{"POLE":"smallAntennadiv",
 				"MAIN":"smallAntenna"
 				},
@@ -62,6 +63,7 @@ var ANTENNAS={	"SMALL":{"ID":"SMALL",
 		"BIG":{"ID":"BIG",
 			"RANGE":{"MAX":170,"MIN":90, "TOLERANCE":0.2},
 			"NAME":"big antenna",
+			"COMPRESSION":{"a":88.8923,"b":81.1177},
 			"CLASSES":{"POLE":"bigAntennadiv",
 				"MAIN":"bigAntenna"
 				},
@@ -466,7 +468,7 @@ function getPositionInternal(err, callback){
     });
 }
 
-function recoverFromOutOfRange(callback){ 
+function recoverFromOutOfRange(callback){
 	client.get(CACHED_CURRENT_POSITION,function(err, value){
 		var speed = configuration.speed.up.normal.speed;
 		if(value >= 135){
@@ -523,13 +525,24 @@ function monitorStatus(callback){
     	if (calibrationSwitch == 0){
     		adc.getAdc2Value(err, function(err, adcValue){
     			if (err) throw err;
-    			with (currentAntenna.RANGE){
-    				var distance = MAX - MIN;
+    			with (currentAntenna){
+    				var distance = RANGE.MAX - RANGE.MIN;
     				var factor = adcValue/adc.max - 1;
     				if (factor < 0) factor = 1;
-    				var newPosition = Math.round(((distance * factor) + MIN)*10)/10;
-				// console.log("CALIBRATION SWITCH PRESSED" , newPosition);
-    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
+				if (factor < 0.35){
+					factor = factor * 1.2957;
+					newPosition = RANGE.MIN + factor*(40/0.35);
+				}
+				else if (factor > 0.65){
+					factor = factor * 1.2957-0.2957;
+				}
+				else{
+					factor = Math.round(50*(1/3 *(factor + 1)))/50;
+				}
+
+    				var newPosition = Math.round(((distance * factor) + RANGE.MIN)*10)/10;
+				console.log("MANUAL POSITION factor, POSITION, DISTANCE, NEW EHIGHT: " , factor, (distance * factor), distance, newPosition );
+//    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
 
     			}
     		});

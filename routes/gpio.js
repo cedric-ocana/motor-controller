@@ -5,7 +5,7 @@
  */
 var tools = require('./tools.js');
 var fs = require("fs");
-var sysFsPath = "/sys/class/gpio/";
+var sysFsPath = "/sys/class/gpio";
 
 var CONFIGURATION = {"LIMITOVERRIDE":{"PIN":23,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
                      "MOTORDRIVER":{"PIN":24,"SET":1,"CLR":0,"INIT":0,"DIRECTION":"out"},
@@ -74,22 +74,43 @@ var internalInit = function(err, callback){
 // Check operating system and load SPI interface if linux is detected.
 if (tools.hardwareAvailable())
 {
+	function exportGpio(name,callback){
+		var io = CONFIGURATION[name];
+		if (!fs.existsSync(sysFsPath+"/gpio"+ io["PIN"])){
+			console.log("EXPORT IO:" + io["PIN"]);
+			fs.writeFile(sysFsPath+"/export",io["PIN"], callback);
+		}
+		else{
+			console.log("IO ALREADY EXPORTED:" + io["PIN"]);
+			callback(null);
+		}
+	}
+
     function openGpio(name, callback){
         if (CONFIGURATION.hasOwnProperty(name)){
-            var io = CONFIGURATION[name];
-            console.log("INIT IO:" + io["PIN"] + " AS "+ io["DIRECTION"] +" IO-NAME:"+name);
-            fs.writeFile(sysFsPath + "/gpio" + io["PIN"] + "/direction", io["DIRECTION"], function(err){
-                if (err) throw err;
-                if(io["DIRECTION"]==="out"){
-                    console.log("SET IO to default:" + io["PIN"] + " INIT-VALUE "+ io["INIT"]);
-                    fs.writeFile(sysFsPath + "/gpio" + io["PIN"] + "/value", io["INIT"], function(err){
-                        if (err) throw err;
-                        callback(null);
-                    });
-                }
-            });
+        	exportGpio(name,function(err){
+			var io = CONFIGURATION[name];
+			console.log("INIT IO:" + io["PIN"] + " AS "+ io["DIRECTION"] +" IO-NAME:"+name);
+			fs.writeFile(sysFsPath + "/gpio" + io["PIN"] + "/direction", io["DIRECTION"], function(err){
+       		         	if (err) throw err;
+				console.log("DIRECTION SET FOR IO:" + io["PIN"]);
+	       	        	if(io["DIRECTION"]==="out"){
+                			console.log("SET IO TO DEFAULT:" + io["PIN"] + " INIT-VALUE "+ io["INIT"]);
+					fs.writeFile(sysFsPath + "/gpio" + io["PIN"] + "/value", io["INIT"], function(err){
+	                	        	if (err) throw err;
+						console.log("INIT IO:" + io["PIN"] + " AS "+ io["DIRECTION"] +" IO-NAME:"+name+" ALL DONE");
+                	        		callback(null);
+                		   	});
+                		}
+                		else{
+					console.log("INIT IO:" + io["PIN"] + " AS "+ io["DIRECTION"] +" IO-NAME:"+name+" ALL DONE");
+               	        		callback(null);
+                		}
+            		});
+            	});
         }
 	else{
+		console.log("OPEN UNDEFINED PORT CANCELED: " + name);
 		callback(null);
 	}
     }
@@ -99,7 +120,7 @@ if (tools.hardwareAvailable())
 	    callback(err);
 	}
 	else{
-            callback(null);
+//            callback(null);
 		// LIMITOVERRIDE// LIMITOVERRIDE
 		openGpio("LIMITOVERRIDE",function(err){
 		openGpio("MOTORDRIVER",function(err){
@@ -107,7 +128,7 @@ if (tools.hardwareAvailable())
 		openGpio("STATUS_5V_FIBER",function(err){
 		openGpio("STATUS_15V_NEGATIVE",function(err){
 		openGpio("STATUS_15V_POSITIVE",function(err){
-		openGpio("STATUS_CALIBRATION_SWITCH",function(err){callback(err);
+		openGpio("STATUS_CALIBRATION_SWITCH",function(err){callback(null);
 		});// STATUS_15V_POSITIVE
 		});// STATUS_15V_NEGATIVE
 		});// STATUS_5V_FIBER
