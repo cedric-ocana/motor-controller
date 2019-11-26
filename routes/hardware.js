@@ -11,6 +11,7 @@ var dac = require('./dac.js');
 var gpio = require('./gpio.js');
 var adc = require('./adc.js');
 var tools = require('./tools.js');
+var exec = require('child_process').exec;
 /**
  * @dependencies Inclusion and setup of redis environemes to manage the status
  */
@@ -504,6 +505,7 @@ function recoverFromOutOfRange(callback){
  * is checked and if the limit protection is triggered then the emergency is set.
  * The function is called at the end of monitorPositon function.
  */
+var count = 0;
 function monitorStatus(callback){
     gpio.getLimitswitch(function(err, limitSwitch){
 	if (err) throw err;
@@ -526,28 +528,39 @@ function monitorStatus(callback){
     	if (err) throw err;
     	// Check if the calibration switch has been pressed
     	if (calibrationSwitch == 0){
+		count = count + 1
     		adc.getAdc2Value(err, function(err, adcValue){
-    			if (err) throw err;
-    			with (currentAntenna){
-    				var distance = RANGE.MAX - RANGE.MIN;
-    				var factor = adcValue/adc.max - 1;
-    				var newPosition = 120;
-    				if (factor < 0) factor = 1;
-				if (factor < 0.35){
-					newPosition = (factor * 1.2857) * COMPRESSION_LOWER.a + COMPRESSION_LOWER.b;
-				}
-				else if (factor > 0.65){
-					newPosition = (factor * 1.2857 - 0.2857) * COMPRESSION_UPPER.a + COMPRESSION_UPPER.b;
-				}
-				else{
-					newPosition = Math.round(50 * (1/3 *(factor + 1))) / 50 * COMPRESSION_MIDDLE.a + COMPRESSION_MIDDLE.b;
-				}
-				console.log("MANUAL POSITION FACTOR, POSITION: " , Math.round(1000 * factor)/1000, Math.round(100 * newPosition)/100 );
-    				client.set(CACHED_TARGET_POSITION, newPosition, function(){});
-
+    			if (err){
+    				console.log("Error during ADC readout");
+    			}
+    			else{
+    				with (currentAntenna){
+	    				var distance = RANGE.MAX - RANGE.MIN;
+	    				var factor = adcValue/adc.max - 1;
+    					var newPosition = 120;
+    					if (factor < 0) factor = 1;
+					if (factor < 0.35){
+						newPosition = (factor * 1.2857) * COMPRESSION_LOWER.a + COMPRESSION_LOWER.b;
+					}
+					else if (factor > 0.65){
+						newPosition = (factor * 1.2857 - 0.2857) * COMPRESSION_UPPER.a + COMPRESSION_UPPER.b;
+					}
+					else{
+						newPosition = Math.round(50 * (1/3 *(factor + 1))) / 50 * COMPRESSION_MIDDLE.a + COMPRESSION_MIDDLE.b;
+					}
+					console.log("MANUAL POSITION FACTOR, POSITION, COUNT: " , Math.round(1000 * factor)/1000, Math.round(100 * newPosition)/100 , count);
+    					client.set(CACHED_TARGET_POSITION, newPosition, function(){});
+    				}
     			}
     		});
+    		if (count > 1700){
+    			console.log("POWER DOWN MAST CONTROLLER");
+    			exec('poweroff', null, function (error,stdout,stderr){});
+    		}
     	}
+	else{
+		count = 0;
+	}
     });
 }
 
