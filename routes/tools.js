@@ -13,7 +13,8 @@ exports.MSG_EMERGENCY_RELEASE = "emergency-release";
 exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";
 
 exports.hardwareAvailable = function hardwareAvailable() {
-    if (os.hostname() === 'mk-mast1')
+//                           MKI00S01MAT
+    if (os.hostname() === 'MKI00S01MAT')
     {
         return true;
     }

@@ -80,7 +80,7 @@ if (tools.hardwareAvailable())
 {
         var i2cbus = require('i2c-bus');
         var i2c1 = i2cbus.openSync(1);
-	var address  = 0x48;
+	var address  = 0x49;
 	var address2 = 0x4A;
 
 	/*

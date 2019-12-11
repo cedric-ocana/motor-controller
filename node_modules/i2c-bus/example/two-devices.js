@@ -1,32 +1,40 @@
 'use strict';
 
-var i2c = require('../'),
-  i2c1;
+const i2c = require('../');
 
-var DS1621_ADDR = 0x48,
-  DS1621_CMD_ACCESS_TH = 0xa1;
+const DS1621_ADDR = 0x48;
+const DS1621_CMD_ACCESS_TH = 0xa1;
 
-var TSL2561_ADDR = 0x39,
-  TSL2561_CMD = 0x80,
-  TSL2561_REG_ID = 0x0a;
+const TSL2561_ADDR = 0x39;
+const TSL2561_CMD = 0x80;
+const TSL2561_REG_ID = 0x0a;
 
-i2c1 = i2c.open(1, function (err) {
-  if (err) throw err;
+const i2c1 = i2c.open(1, err => {
+  if (err) {
+    throw err;
+  }
 
-  (function readTempHigh() {
-    i2c1.readWord(DS1621_ADDR, DS1621_CMD_ACCESS_TH, function (err, tempHigh) {
-      if (err) throw err;
+  const readDs1621TempHigh = _ => {
+    i2c1.readWord(DS1621_ADDR, DS1621_CMD_ACCESS_TH, (err, tempHigh) => {
+      if (err) {
+        throw err;
+      }
       console.log(tempHigh);
-      readTempHigh();
+      readDs1621TempHigh();
     });
-  }());
+  };
 
-  (function readId() {
-    i2c1.readByte(TSL2561_ADDR, TSL2561_CMD | TSL2561_REG_ID, function (err, id) {
-      if (err) throw err;
+  const readTsl2561Id = _ => {
+    i2c1.readByte(TSL2561_ADDR, TSL2561_CMD | TSL2561_REG_ID, (err, id) => {
+      if (err) {
+        throw err;
+      }
       console.log(id);
-      readId();
+      readTsl2561Id();
     });
-  }());
+  };
+
+  readDs1621TempHigh();
+  readTsl2561Id();
 });
 
