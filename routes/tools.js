@@ -13,11 +13,12 @@ exports.MSG_EMERGENCY_RELEASE = "emergency-release";
 exports.FLAG_EMERGENCY_ONGOING = "emergency-ongoing";
 
 exports.hardwareAvailable = function hardwareAvailable() {
-//                           MKI00S01MAT
+    // MKI00S01MAT - 10.147.2.206
     if (os.hostname() === 'MKI00S01MAT')
     {
         return true;
     }
+    // MKI00S01MAT - 10.147.2.207
     if (os.hostname() === 'MK_I00S02_MAT')
     {
         return true;

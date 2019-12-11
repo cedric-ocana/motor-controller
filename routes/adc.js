@@ -83,6 +83,19 @@ if (tools.hardwareAvailable())
 	var address  = 0x49;
 	var address2 = 0x4A;
 
+	// MKI00S01MAT - 10.147.2.206
+	if (os.hostname() === 'MKI00S01MAT')
+	{
+		address  = 0x49;
+		address2 = 0x4A;
+	}
+	// MKI00S01MAT - 10.147.2.207
+	if (os.hostname() === 'MK_I00S02_MAT')
+	{
+		address  = 0x48;
+		address2 = 0x4A;
+	}
+
 	/*
 	 * Blocking version to get ADC value
 	 */
