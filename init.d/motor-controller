@@ -11,7 +11,8 @@
 ### END INIT INFO
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin
-DAEMON_ARGS="/opt/motor-controller/launch"
+DAEMON_ARGS="/opt/motor-controller/bin/www"
+
 DESC="node motor controller service"
 NODEUSER=root:root
 LOCAL_VAR_RUN=/var/run
@@ -53,6 +54,11 @@ do_start()
 # First action that should be done is to turn off the motor driver.
 # This avoids any strange behaviour if the service was killed
 #/opt/motor-controller/init.d/setupGPIOS
+if [ -d "/sys/class/gpio/gpio24" ]; then
+	echo "motor-controller GPIO24 already set" > /dev/console
+else
+	echo "24" > /sys/class/gpio/export
+fi
 echo "out" > /sys/class/gpio/gpio24/direction
 echo "1" > /sys/class/gpio/gpio24/value
 # Return
